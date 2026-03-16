@@ -1,0 +1,12 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /api
+
+# Host
+Host: https://jerseyslimestudio38.com
+
+# Sitemaps
+Sitemap: https://jerseyslimestudio38.com/sitemap.xml
