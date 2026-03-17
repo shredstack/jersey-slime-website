@@ -1,39 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'My Bookings',
 }
-
-const upcomingBookings = [
-  {
-    id: '1',
-    experience: 'Slime Making Workshop',
-    date: 'March 22, 2026',
-    time: '2:00 PM',
-    guests: 4,
-    status: 'confirmed',
-  },
-  {
-    id: '2',
-    experience: 'Glow-in-the-Dark Slime Party',
-    date: 'April 5, 2026',
-    time: '11:00 AM',
-    guests: 8,
-    status: 'pending',
-  },
-]
-
-const pastBookings = [
-  {
-    id: '3',
-    experience: 'Butter Slime Experience',
-    date: 'February 10, 2026',
-    time: '3:00 PM',
-    guests: 3,
-    status: 'completed',
-  },
-]
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -50,16 +22,45 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function BookingCard({ booking }: { booking: (typeof upcomingBookings)[0] }) {
+interface Booking {
+  id: string
+  guest_count: number
+  status: string
+  total_price: number
+  notes: string | null
+  availability_slots: {
+    date: string
+    start_time: string
+    end_time: string
+    experiences: {
+      name: string
+    }
+  }
+}
+
+function BookingCard({ booking }: { booking: Booking }) {
+  const slot = booking.availability_slots
+  const dateStr = new Date(slot.date + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  const timeStr = new Date(`2000-01-01T${slot.start_time}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-gray-900">{booking.experience}</h3>
+          <h3 className="font-semibold text-gray-900">{slot.experiences.name}</h3>
           <p className="mt-1 text-sm text-gray-600">
-            {booking.date} at {booking.time}
+            {dateStr} at {timeStr}
           </p>
-          <p className="mt-1 text-sm text-gray-500">{booking.guests} guest{booking.guests !== 1 ? 's' : ''}</p>
+          <p className="mt-1 text-sm text-gray-500">
+            {booking.guest_count} guest{booking.guest_count !== 1 ? 's' : ''}
+          </p>
         </div>
         <StatusBadge status={booking.status} />
       </div>
@@ -67,7 +68,46 @@ function BookingCard({ booking }: { booking: (typeof upcomingBookings)[0] }) {
   )
 }
 
-export default function BookingsPage() {
+export default async function BookingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  // Fetch bookings with slot and experience info
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      guest_count,
+      status,
+      total_price,
+      notes,
+      availability_slots (
+        date,
+        start_time,
+        end_time,
+        experiences (
+          name
+        )
+      )
+    `)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  const allBookings = (bookings ?? []) as unknown as Booking[]
+
+  const upcomingBookings = allBookings.filter(
+    (b) => b.availability_slots.date >= today && b.status !== 'cancelled'
+  )
+  const pastBookings = allBookings.filter(
+    (b) => b.availability_slots.date < today || b.status === 'cancelled'
+  )
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       {/* Header */}
@@ -81,7 +121,6 @@ export default function BookingsPage() {
         <h1 className="mt-2 text-3xl font-display font-bold text-gray-900">My Bookings</h1>
       </div>
 
-      {/* Tabs - rendered server-side, both sections visible with anchors */}
       <div className="space-y-10">
         {/* Upcoming */}
         <section>

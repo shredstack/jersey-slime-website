@@ -1,12 +1,62 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { navLinks } from './Navigation'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+          .then(({ data }) => setRole(data?.role ?? null))
+      }
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const newUser = session?.user ?? null
+      setUser(newUser)
+      if (newUser) {
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', newUser.id)
+          .single()
+          .then(({ data }) => setRole(data?.role ?? null))
+      } else {
+        setRole(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setUser(null)
+    setRole(null)
+    router.push('/')
+    router.refresh()
+  }
+
+  const isAdmin = role === 'admin'
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-sm">
@@ -40,15 +90,41 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Right side: Login + Mobile toggle */}
+          {/* Right side: Auth buttons + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/account"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
-            >
-              <UserIcon className="h-4 w-4" />
-              Login
-            </Link>
+            {user ? (
+              <div className="hidden sm:flex items-center gap-2">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
+                  >
+                    Admin
+                  </Link>
+                )}
+                <Link
+                  href="/account"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
+                >
+                  <UserIcon className="h-4 w-4" />
+                  My Account
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
+              >
+                <UserIcon className="h-4 w-4" />
+                Login
+              </Link>
+            )}
 
             {/* Mobile hamburger */}
             <button
@@ -111,15 +187,43 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="px-4 pt-2">
-          <Link
-            href="/account"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center justify-center gap-2 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
-          >
-            <UserIcon className="h-4 w-4" />
-            Login / Account
-          </Link>
+        <div className="px-4 pt-2 space-y-2">
+          {user ? (
+            <>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full rounded-full bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
+              <Link
+                href="/account"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
+              >
+                <UserIcon className="h-4 w-4" />
+                My Account
+              </Link>
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleSignOut() }}
+                className="flex items-center justify-center w-full rounded-full border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
+            >
+              <UserIcon className="h-4 w-4" />
+              Login / Sign Up
+            </Link>
+          )}
         </div>
       </div>
     </header>

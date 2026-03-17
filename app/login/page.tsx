@@ -1,10 +1,117 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [signupSuccess, setSignupSuccess] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/account'
+
+  const supabase = createClient()
+
+  async function handleSignIn(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    router.push(redirectTo)
+    router.refresh()
+  }
+
+  async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const fullName = formData.get('full_name') as string
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirm_password') as string
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    setSignupSuccess(true)
+    setLoading(false)
+  }
+
+  async function handleGoogleSignIn() {
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+    }
+  }
+
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="rounded-xl bg-green-50 border border-green-200 p-6">
+            <h2 className="text-xl font-semibold text-green-800">Check your email</h2>
+            <p className="mt-2 text-sm text-green-700">
+              We sent a confirmation link to your email address. Please click it to activate your account.
+            </p>
+          </div>
+          <button
+            onClick={() => { setSignupSuccess(false); setActiveTab('signin') }}
+            className="text-sm text-brand-purple hover:text-brand-pink transition-colors"
+          >
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -24,7 +131,7 @@ export default function LoginPage() {
         {/* Tab Toggle */}
         <div className="flex rounded-lg bg-gray-100 p-1">
           <button
-            onClick={() => setActiveTab('signin')}
+            onClick={() => { setActiveTab('signin'); setError(null) }}
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'signin'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -34,7 +141,7 @@ export default function LoginPage() {
             Sign In
           </button>
           <button
-            onClick={() => setActiveTab('signup')}
+            onClick={() => { setActiveTab('signup'); setError(null) }}
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'signup'
                 ? 'bg-white text-gray-900 shadow-sm'
@@ -45,10 +152,19 @@ export default function LoginPage() {
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         {/* Google OAuth */}
         <button
           type="button"
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -83,13 +199,14 @@ export default function LoginPage() {
 
         {/* Sign In Form */}
         {activeTab === 'signin' && (
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleSignIn}>
             <div>
               <label htmlFor="signin-email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
               <input
                 id="signin-email"
+                name="email"
                 type="email"
                 autoComplete="email"
                 required
@@ -103,6 +220,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="signin-password"
+                name="password"
                 type="password"
                 autoComplete="current-password"
                 required
@@ -120,22 +238,24 @@ export default function LoginPage() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-brand-pink px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-pink/90 transition-colors"
+              disabled={loading}
+              className="w-full rounded-lg bg-brand-pink px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-pink/90 transition-colors disabled:opacity-50"
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         )}
 
         {/* Sign Up Form */}
         {activeTab === 'signup' && (
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleSignUp}>
             <div>
               <label htmlFor="signup-name" className="block text-sm font-medium text-gray-700">
                 Full name
               </label>
               <input
                 id="signup-name"
+                name="full_name"
                 type="text"
                 autoComplete="name"
                 required
@@ -149,6 +269,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="signup-email"
+                name="email"
                 type="email"
                 autoComplete="email"
                 required
@@ -162,6 +283,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="signup-password"
+                name="password"
                 type="password"
                 autoComplete="new-password"
                 required
@@ -178,6 +300,7 @@ export default function LoginPage() {
               </label>
               <input
                 id="signup-confirm-password"
+                name="confirm_password"
                 type="password"
                 autoComplete="new-password"
                 required
@@ -187,9 +310,10 @@ export default function LoginPage() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-brand-pink px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-pink/90 transition-colors"
+              disabled={loading}
+              className="w-full rounded-lg bg-brand-pink px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-pink/90 transition-colors disabled:opacity-50"
             >
-              Sign Up
+              {loading ? 'Creating account...' : 'Sign Up'}
             </button>
           </form>
         )}
