@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Colors */
+  --color-brand-pink: #FF6B9D;
+  --color-brand-purple: #C084FC;
+  --color-brand-teal: #5EEAD4;
+  --color-brand-yellow: #FDE047;
+  --color-brand-blue: #7DD3FC;
+
+  /* Neutral Palette */
+  --color-background: #FFFFFF;
+  --color-foreground: #171717;
+  --color-muted: #F5F5F5;
+  --color-muted-foreground: #737373;
+  --color-border: #E5E5E5;
+
+  /* Functional Colors */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  ::selection {
+    background-color: var(--color-brand-pink);
+    color: white;
+  }
+}
