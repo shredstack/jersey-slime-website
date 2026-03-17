@@ -265,7 +265,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Email</h3>
-                    <p className="mt-1 text-gray-600">hello@jerseyslimestudio38.com</p>
+                    <p className="mt-1 text-gray-600">hello@jerseyslimestudio.com</p>
                   </div>
                 </div>
 

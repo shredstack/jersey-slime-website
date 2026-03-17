@@ -17,7 +17,7 @@ const fredoka = Fredoka({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://jerseyslimestudio38.com'),
+  metadataBase: new URL('https://jerseyslimestudio.com'),
   title: {
     template: '%s | Jersey Slime Studio 38',
     default: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://jerseyslimestudio38.com',
+    url: 'https://jerseyslimestudio.com',
     siteName: 'Jersey Slime Studio 38',
     title: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
     description:
@@ -52,6 +52,10 @@ export const metadata: Metadata = {
     title: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
     description:
       'Utah\'s premier hands-on slime making experience studio. Book slime parties, walk-in experiences, and more.',
+  },
+  icons: {
+    icon: '/jersey-slime-logo.png',
+    apple: '/jersey-slime-logo.png',
   },
   robots: {
     index: true,
@@ -76,7 +80,7 @@ const jsonLd = {
     addressRegion: 'UT',
     addressCountry: 'US',
   },
-  url: 'https://jerseyslimestudio38.com',
+  url: 'https://jerseyslimestudio.com',
 }
 
 export default function RootLayout({

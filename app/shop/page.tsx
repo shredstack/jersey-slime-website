@@ -96,7 +96,7 @@ export default function ShopPage() {
           <p className="mt-4 text-gray-600">
             We&apos;re working on bringing the full shopping experience right here to our website!
             Soon you&apos;ll be able to browse, customize, and order your favorite slimes without
-            ever leaving jerseyslimestudio38.com. Stay tuned for updates.
+            ever leaving jerseyslimestudio.com. Stay tuned for updates.
           </p>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
             {[

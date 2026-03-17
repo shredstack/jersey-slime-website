@@ -37,7 +37,7 @@ SEO is critical — the site needs to rank for slime experience searches in Utah
 - Every public page needs appropriate `title` and `description` metadata (use Next.js `metadata` export)
 - Use semantic HTML: proper heading hierarchy, landmark elements, alt text on all images
 - The sitemap auto-generates on build; admin/account/API routes are excluded in `next-sitemap.config.js`
-- Production domain: `jerseyslimestudio38.com`
+- Production domain: `jerseyslimestudio.com`
 
 ## Mobile-First Design
 
@@ -60,3 +60,8 @@ Required env vars are documented in `.env.local.example`:
 ## PR Reviews
 
 PR review guidelines are in `claude_pr_instructions.md` at the project root.
+
+## Production Info
+
+Website domain: jerseyslimestudio.com
+

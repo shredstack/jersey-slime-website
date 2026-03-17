@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://jerseyslimestudio38.com/faq</loc><lastmod>2026-03-16T18:58:42.801Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/slime</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/book</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/about</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/parties</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/account</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/admin</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/blog</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/contact</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/shop</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/experiences</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://jerseyslimestudio38.com/login</loc><lastmod>2026-03-16T18:58:42.803Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/slime</loc><lastmod>2026-03-16T22:10:42.774Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/faq</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/blog</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/admin</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/about</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/experiences</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/account</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/shop</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/contact</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/parties</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/login</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>http://localhost:3001/book</loc><lastmod>2026-03-16T22:10:42.776Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 </urlset>

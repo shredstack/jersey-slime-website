@@ -6,7 +6,7 @@ Disallow: /account
 Disallow: /api
 
 # Host
-Host: https://jerseyslimestudio38.com
+Host: http://localhost:3001
 
 # Sitemaps
-Sitemap: https://jerseyslimestudio38.com/sitemap.xml
+Sitemap: http://localhost:3001/sitemap.xml

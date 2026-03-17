@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { navLinks } from './Navigation'
 
 export default function Header() {
@@ -13,6 +14,14 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo / Brand */}
           <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/jersey-slime-logo.png"
+              alt="Jersey Slime Studio 38 logo"
+              width={40}
+              height={40}
+              className="rounded-full"
+              priority
+            />
             <span className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-400 to-teal-400 bg-clip-text text-transparent font-display tracking-tight">
               Jersey Slime Studio 38
             </span>

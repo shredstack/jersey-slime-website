@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const exploreLinks = [
   { href: '/', label: 'Home' },
@@ -28,7 +29,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link href="/" className="inline-block">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <Image
+                src="/jersey-slime-logo.png"
+                alt="Jersey Slime Studio 38 logo"
+                width={36}
+                height={36}
+                className="rounded-full"
+              />
               <span className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-400 to-teal-400 bg-clip-text text-transparent font-display tracking-tight">
                 Jersey Slime Studio 38
               </span>
