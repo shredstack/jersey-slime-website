@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -12,51 +12,72 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<string | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      if (user) {
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-          .then(({ data }) => setRole(data?.role ?? null))
-      }
-    })
+    function fetchRole(userId: string) {
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
+        .then(({ data }) => setRole(data?.role ?? null))
+    }
 
-    // Listen for auth changes
+    // Listen for auth changes (includes INITIAL_SESSION event)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const newUser = session?.user ?? null
       setUser(newUser)
       if (newUser) {
-        supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', newUser.id)
-          .single()
-          .then(({ data }) => setRole(data?.role ?? null))
+        fetchRole(newUser.id)
       } else {
         setRole(null)
+      }
+    })
+
+    // Validate session with the server (more reliable than getSession for SSR cookie setups)
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (authUser) {
+        setUser(authUser)
+        fetchRole(authUser.id)
       }
     })
 
     return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [dropdownOpen])
+
   async function handleSignOut() {
     await supabase.auth.signOut()
     setUser(null)
     setRole(null)
+    setDropdownOpen(false)
     router.push('/')
     router.refresh()
   }
 
   const isAdmin = role === 'admin'
+
+  // Derive initials for the avatar
+  const displayName = user?.user_metadata?.full_name as string | undefined
+  const initials = displayName
+    ? displayName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? '?'
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-sm">
@@ -90,31 +111,76 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Right side: Auth buttons + Mobile toggle */}
+          {/* Right side: Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
             {user ? (
               <div className="hidden sm:flex items-center gap-2">
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
+                {/* Profile dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    aria-label="Open profile menu"
+                    aria-expanded={dropdownOpen}
+                    className="flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-0.5 shadow-md transition-transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2"
                   >
-                    Admin
-                  </Link>
-                )}
-                <Link
-                  href="/account"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 hover:shadow-lg"
-                >
-                  <UserIcon className="h-4 w-4" />
-                  My Account
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="inline-flex items-center rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Sign Out
-                </button>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-purple-600 select-none">
+                      {initials}
+                    </span>
+                  </button>
+
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 z-50 overflow-hidden">
+                      {/* User info */}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        {displayName && (
+                          <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
+                        )}
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      </div>
+
+                      {/* Links */}
+                      <div className="py-1">
+                        <Link
+                          href="/account"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                        >
+                          <UserIcon className="h-4 w-4 shrink-0" />
+                          My Profile
+                        </Link>
+                        <Link
+                          href="/account/bookings"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                        >
+                          <CalendarIcon className="h-4 w-4 shrink-0" />
+                          My Bookings
+                        </Link>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                          >
+                            <ShieldIcon className="h-4 w-4 shrink-0" />
+                            Admin Dashboard
+                          </Link>
+                        )}
+                      </div>
+
+                      {/* Sign out */}
+                      <div className="border-t border-gray-100 py-1">
+                        <button
+                          onClick={handleSignOut}
+                          className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <LogOutIcon className="h-4 w-4 shrink-0" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <Link
@@ -190,29 +256,54 @@ export default function Header() {
         <div className="px-4 pt-2 space-y-2">
           {user ? (
             <>
+              {/* User info */}
+              <div className="flex items-center gap-3 px-3 py-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl mb-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-sm font-bold text-white select-none">
+                  {initials}
+                </span>
+                <div className="min-w-0">
+                  {displayName && (
+                    <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
+                  )}
+                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                </div>
+              </div>
+
+              <Link
+                href="/account"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+              >
+                <UserIcon className="h-4 w-4 shrink-0" />
+                My Profile
+              </Link>
+              <Link
+                href="/account/bookings"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+              >
+                <CalendarIcon className="h-4 w-4 shrink-0" />
+                My Bookings
+              </Link>
               {isAdmin && (
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full rounded-full bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
+                  className="flex items-center gap-2.5 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                 >
+                  <ShieldIcon className="h-4 w-4 shrink-0" />
                   Admin Dashboard
                 </Link>
               )}
-              <Link
-                href="/account"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105"
-              >
-                <UserIcon className="h-4 w-4" />
-                My Account
-              </Link>
-              <button
-                onClick={() => { setMobileMenuOpen(false); handleSignOut() }}
-                className="flex items-center justify-center w-full rounded-full border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="pt-1 border-t border-gray-100">
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleSignOut() }}
+                  className="flex items-center gap-2.5 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  <LogOutIcon className="h-4 w-4 shrink-0" />
+                  Sign Out
+                </button>
+              </div>
             </>
           ) : (
             <Link
@@ -277,6 +368,51 @@ function UserIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
       />
+    </svg>
+  )
+}
+
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+    </svg>
+  )
+}
+
+function ShieldIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+    </svg>
+  )
+}
+
+function LogOutIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
     </svg>
   )
 }
