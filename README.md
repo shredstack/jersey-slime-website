@@ -90,6 +90,35 @@ middleware.ts           # Auth middleware for protected routes
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 
+## Applying Database Migrations
+
+1. Start the local Supabase stack (requires Docker):
+```bash
+npx supabase start
+```
+This spins up a local Postgres, Auth, Storage, etc. in Docker containers.
+
+1. Apply migrations locally:
+```bash
+npx supabase db reset
+```
+This drops the local database and re-runs all migrations from scratch — the best way to verify your migration files are correct.
+
+3. If you want to apply only new/pending migrations without resetting:
+```bash
+npx supabase migration up
+```
+
+4. Check migration status:
+```bash
+npx supabase migration list
+```
+
+5. When you're done testing:
+```bash
+npx supabase stop
+```
+
 ## Key Features (v1)
 
 - **SEO-optimized** — discoverable when searching for slime experiences in Utah
