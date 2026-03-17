@@ -93,11 +93,19 @@ web3 = 30
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 secure_password_change = false
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "Confirm your Jersey Slime account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Jersey Slime password"
+content_path = "./supabase/templates/recovery.html"
 
 [auth.sms]
 enable_signup = false
