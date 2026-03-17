@@ -64,4 +64,3 @@ PR review guidelines are in `claude_pr_instructions.md` at the project root.
 ## Production Info
 
 Website domain: jerseyslimestudio.com
-
