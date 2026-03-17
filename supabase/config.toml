@@ -70,8 +70,8 @@ max_indexes = 5
 
 [auth]
 enabled = true
-site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback", "https://127.0.0.1:3000", "http://127.0.0.1:3000/auth/callback", "https://jerseyslimestudio.com/auth/callback"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
@@ -93,11 +93,19 @@ web3 = 30
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 secure_password_change = false
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "Confirm your Jersey Slime account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Jersey Slime password"
+content_path = "./supabase/templates/recovery.html"
 
 [auth.sms]
 enable_signup = false
@@ -148,6 +156,13 @@ enabled = false
 
 [auth.third_party.clerk]
 enabled = false
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = "http://127.0.0.1:54341/auth/v1/callback"
+skip_nonce_check = false
 
 [auth.oauth_server]
 enabled = false

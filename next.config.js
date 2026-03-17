@@ -9,6 +9,15 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/sitemap-0.xml',
+        destination: '/sitemap.xml',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

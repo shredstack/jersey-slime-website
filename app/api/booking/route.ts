@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     const { slot_id, guest_count, notes } = parsed.data
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Authenticate user
     const {
