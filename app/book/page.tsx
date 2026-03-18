@@ -1,32 +1,88 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
-// Metadata must be exported from a separate file for client components,
-// but for now we set the title via the layout or a head component.
-// In production, move metadata to a layout.tsx or use generateMetadata in a server wrapper.
+interface AvailabilitySlot {
+  id: string
+  start_time: string
+  end_time: string
+  spots_remaining: number
+}
 
-const timeSlots = [
-  '10:00 AM',
-  '11:00 AM',
-  '12:00 PM',
-  '1:00 PM',
-  '2:00 PM',
-  '3:00 PM',
-  '4:00 PM',
-  '5:00 PM',
-]
+function formatTime(time: string) {
+  return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
 
 export default function BookPage() {
+  const router = useRouter()
   const [selectedDate, setSelectedDate] = useState('')
-  const [selectedTime, setSelectedTime] = useState('')
+  const [selectedSlotId, setSelectedSlotId] = useState('')
   const [guests, setGuests] = useState(1)
   const [notes, setNotes] = useState('')
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!selectedDate) {
+      setSlots([])
+      setSelectedSlotId('')
+      return
+    }
+
+    setLoadingSlots(true)
+    setSelectedSlotId('')
+
+    const supabase = createClient()
+    supabase
+      .from('availability_slots')
+      .select('id, start_time, end_time, spots_remaining')
+      .eq('date', selectedDate)
+      .gt('spots_remaining', 0)
+      .order('start_time')
+      .then(({ data }) => {
+        setSlots(data ?? [])
+        setLoadingSlots(false)
+      })
+  }, [selectedDate])
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Supabase integration will come later
-    alert('Booking submitted! We will confirm your reservation soon.')
+    setError('')
+
+    if (!selectedSlotId) {
+      setError('Please select a time slot.')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot_id: selectedSlotId, guest_count: guests, notes }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error ?? 'Something went wrong. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
+      router.push('/account/bookings')
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -63,6 +119,7 @@ export default function BookPage() {
                 id="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
                 className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
                 required
               />
@@ -78,20 +135,28 @@ export default function BookPage() {
                   Select a date to see available time slots
                 </p>
               )}
-              {selectedDate && (
+              {selectedDate && loadingSlots && (
+                <p className="mt-2 text-sm text-gray-500">Loading available times…</p>
+              )}
+              {selectedDate && !loadingSlots && slots.length === 0 && (
+                <p className="mt-2 text-sm text-gray-500">
+                  No available slots for this date. Please try another day.
+                </p>
+              )}
+              {selectedDate && !loadingSlots && slots.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {timeSlots.map((slot) => (
+                  {slots.map((slot) => (
                     <button
-                      key={slot}
+                      key={slot.id}
                       type="button"
-                      onClick={() => setSelectedTime(slot)}
+                      onClick={() => setSelectedSlotId(slot.id)}
                       className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
-                        selectedTime === slot
+                        selectedSlotId === slot.id
                           ? 'border-brand-purple bg-brand-purple text-white'
                           : 'border-gray-200 bg-white text-gray-700 hover:border-brand-purple/50 hover:bg-brand-purple/5'
                       }`}
                     >
-                      {slot}
+                      {formatTime(slot.start_time)}
                     </button>
                   ))}
                 </div>
@@ -136,12 +201,17 @@ export default function BookPage() {
               />
             </div>
 
+            {error && (
+              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+            )}
+
             {/* Submit */}
             <button
               type="submit"
-              className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              disabled={submitting}
+              className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              Confirm Booking
+              {submitting ? 'Confirming…' : 'Confirm Booking'}
             </button>
           </form>
         </div>

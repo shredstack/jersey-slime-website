@@ -63,19 +63,50 @@ export default function PartiesPage() {
     selectedPackage: '',
     message: '',
   })
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
+
+  function formatPhone(value: string) {
+    const digits = value.replace(/\D/g, '').slice(0, 10)
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
 
   function handleChange(
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === 'phone' ? formatPhone(value) : value,
+    }))
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    // Supabase integration will come later
-    alert('Party inquiry submitted! We will be in touch within 24 hours.')
+    setStatus('submitting')
+    setErrorMessage('')
+
+    try {
+      const res = await fetch('/api/parties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Something went wrong')
+      }
+
+      setStatus('success')
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+      setStatus('error')
+    }
   }
 
   return (
@@ -155,6 +186,20 @@ export default function PartiesPage() {
             hours to plan the perfect party!
           </p>
 
+          {status === 'success' ? (
+            <div className="mt-10 rounded-2xl border border-green-100 bg-green-50 p-10 text-center shadow-lg">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
+                🎉
+              </div>
+              <h3 className="font-display text-2xl font-bold text-gray-900">
+                Inquiry Received!
+              </h3>
+              <p className="mt-3 text-gray-600">
+                Thanks, {formData.name}! We&rsquo;ll reach out to {formData.email} within 24 hours
+                to start planning your perfect party.
+              </p>
+            </div>
+          ) : (
           <form
             onSubmit={handleSubmit}
             className="mt-10 space-y-6 rounded-2xl border border-gray-100 bg-white p-8 shadow-lg"
@@ -211,7 +256,10 @@ export default function PartiesPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                placeholder="(801) 555-1234"
+                autoComplete="tel"
+                inputMode="numeric"
+                className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
                 required
               />
             </div>
@@ -323,14 +371,23 @@ export default function PartiesPage() {
               />
             </div>
 
+            {/* Error message */}
+            {status === 'error' && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+                {errorMessage}
+              </p>
+            )}
+
             {/* Submit */}
             <button
               type="submit"
-              className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              disabled={status === 'submitting'}
+              className="w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-purple py-4 text-lg font-bold text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Submit Party Inquiry
+              {status === 'submitting' ? 'Submitting…' : 'Submit Party Inquiry'}
             </button>
           </form>
+          )}
         </div>
       </section>
     </main>

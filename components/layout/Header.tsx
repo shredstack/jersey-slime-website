@@ -156,6 +156,14 @@ export default function Header() {
                           <CalendarIcon className="h-4 w-4 shrink-0" />
                           My Bookings
                         </Link>
+                        <Link
+                          href="/account/events"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                        >
+                          <PartyIcon className="h-4 w-4 shrink-0" />
+                          My Events
+                        </Link>
                         {isAdmin && (
                           <Link
                             href="/admin"
@@ -285,6 +293,14 @@ export default function Header() {
                 <CalendarIcon className="h-4 w-4 shrink-0" />
                 My Bookings
               </Link>
+              <Link
+                href="/account/events"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 w-full rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+              >
+                <PartyIcon className="h-4 w-4 shrink-0" />
+                My Events
+              </Link>
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -368,6 +384,21 @@ function UserIcon({ className }: { className?: string }) {
         strokeLinejoin="round"
         d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
       />
+    </svg>
+  )
+}
+
+function PartyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a1 1 0 011 1v1.07A8.001 8.001 0 0119.93 11H21a1 1 0 010 2h-1.07A8.001 8.001 0 0113 19.93V21a1 1 0 01-2 0v-1.07A8.001 8.001 0 014.07 13H3a1 1 0 010-2h1.07A8.001 8.001 0 0111 4.07V3a1 1 0 011-1zm0 4a6 6 0 100 12A6 6 0 0012 6zm0 2a4 4 0 110 8 4 4 0 010-8z" />
     </svg>
   )
 }

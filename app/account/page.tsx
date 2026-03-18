@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import ProfileEditForm from './ProfileEditForm'
 
 export const metadata: Metadata = {
   title: 'My Account',
@@ -27,23 +28,12 @@ export default async function AccountPage() {
 
       {/* Profile Section */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Profile</h2>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-gray-500">Name</p>
-            <p className="text-gray-900 font-medium">{profile?.full_name || 'Not set'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="text-gray-900 font-medium">{profile?.email || user.email}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Phone</p>
-            <p className="text-gray-900 font-medium">{profile?.phone || 'Not set'}</p>
-          </div>
-        </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile</h2>
+        <ProfileEditForm
+          initialName={profile?.full_name ?? ''}
+          initialPhone={profile?.phone ?? ''}
+          email={profile?.email ?? user.email ?? ''}
+        />
       </section>
 
       {/* Quick Links */}
@@ -55,6 +45,15 @@ export default async function AccountPage() {
             className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50 transition-colors"
           >
             <span className="font-medium text-gray-900">My Bookings</span>
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
+            href="/account/events"
+            className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <span className="font-medium text-gray-900">My Events</span>
             <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
