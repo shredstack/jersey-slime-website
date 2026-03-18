@@ -1,68 +1,84 @@
 import type { Metadata } from 'next'
+import { createServiceClient } from '@/lib/supabase/server'
+import { formatDate } from '@/lib/utils'
+import PartyStatusSelect from './PartyStatusSelect'
+import PartyTotalCostInput from './PartyTotalCostInput'
 
 export const metadata: Metadata = {
   title: 'Party Inquiries',
 }
 
-const inquiries = [
-  { contact: 'Emily Davis', package: 'Birthday Bash', date: 'Apr 10, 2026', guests: 12, status: 'new' },
-  { contact: 'Tom Wilson', package: 'Group Event', date: 'Apr 15, 2026', guests: 20, status: 'contacted' },
-  { contact: 'Lisa Chen', package: 'Birthday Bash', date: 'Apr 22, 2026', guests: 15, status: 'new' },
-  { contact: 'David Park', package: 'Team Building', date: 'May 3, 2026', guests: 25, status: 'booked' },
-]
+export default async function AdminPartiesPage() {
+  const supabase = createServiceClient()
 
-function statusClass(status: string) {
-  switch (status) {
-    case 'new':
-      return 'bg-yellow-100 text-yellow-700'
-    case 'contacted':
-      return 'bg-blue-100 text-blue-700'
-    case 'booked':
-      return 'bg-green-100 text-green-700'
-    default:
-      return 'bg-gray-100 text-gray-700'
-  }
-}
+  const { data: inquiries } = await supabase
+    .from('party_inquiries')
+    .select(
+      `id, contact_name, contact_email, contact_phone, preferred_date,
+       guest_count, age_range, message, status, admin_notes, total_cost, created_at,
+       package:party_packages(name)`
+    )
+    .order('created_at', { ascending: false })
 
-export default function AdminPartiesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Party Inquiries</h1>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-gray-500">
-              <tr>
-                <th className="px-6 py-3 font-medium">Contact</th>
-                <th className="px-6 py-3 font-medium">Package</th>
-                <th className="px-6 py-3 font-medium">Date</th>
-                <th className="px-6 py-3 font-medium">Guests</th>
-                <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {inquiries.map((inquiry, i) => (
-                <tr key={i}>
-                  <td className="px-6 py-3 text-gray-900 font-medium">{inquiry.contact}</td>
-                  <td className="px-6 py-3 text-gray-700">{inquiry.package}</td>
-                  <td className="px-6 py-3 text-gray-700">{inquiry.date}</td>
-                  <td className="px-6 py-3 text-gray-700">{inquiry.guests}</td>
-                  <td className="px-6 py-3">
-                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusClass(inquiry.status)}`}>
-                      {inquiry.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3">
-                    <button className="text-brand-purple hover:text-brand-pink text-sm font-medium transition-colors">
-                      View
-                    </button>
-                  </td>
+          {inquiries && inquiries.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-left text-gray-500">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Contact</th>
+                  <th className="px-6 py-3 font-medium">Package</th>
+                  <th className="px-6 py-3 font-medium">Preferred Date</th>
+                  <th className="px-6 py-3 font-medium">Guests</th>
+                  <th className="px-6 py-3 font-medium">Ages</th>
+                  <th className="px-6 py-3 font-medium">Total Cost</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {inquiries.map((inquiry) => {
+                  const pkg = inquiry.package as { name: string } | null
+                  return (
+                    <tr key={inquiry.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-3">
+                        <p className="font-medium text-gray-900">{inquiry.contact_name}</p>
+                        <p className="text-xs text-gray-500">{inquiry.contact_email}</p>
+                        {inquiry.contact_phone && (
+                          <p className="text-xs text-gray-500">{inquiry.contact_phone}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-gray-700">{pkg?.name ?? '—'}</td>
+                      <td className="px-6 py-3 text-gray-700">
+                        {formatDate(inquiry.preferred_date)}
+                      </td>
+                      <td className="px-6 py-3 text-gray-700">{inquiry.guest_count}</td>
+                      <td className="px-6 py-3 text-gray-700">{inquiry.age_range}</td>
+                      <td className="px-6 py-3">
+                        <PartyTotalCostInput
+                          inquiryId={inquiry.id}
+                          currentCost={(inquiry.total_cost as number | null) ?? null}
+                        />
+                      </td>
+                      <td className="px-6 py-3">
+                        <PartyStatusSelect
+                          inquiryId={inquiry.id}
+                          currentStatus={
+                            inquiry.status as 'new' | 'contacted' | 'confirmed' | 'completed'
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p className="px-6 py-8 text-sm text-gray-500 text-center">No party inquiries yet.</p>
+          )}
         </div>
       </div>
     </div>

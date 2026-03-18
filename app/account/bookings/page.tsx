@@ -2,70 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import BookingCardInteractive from './BookingCardInteractive'
 
 export const metadata: Metadata = {
   title: 'My Bookings',
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    confirmed: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    completed: 'bg-gray-100 text-gray-700',
-    cancelled: 'bg-red-100 text-red-700',
-  }
-
-  return (
-    <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium capitalize ${styles[status] ?? 'bg-gray-100 text-gray-700'}`}>
-      {status}
-    </span>
-  )
-}
-
-interface Booking {
-  id: string
-  guest_count: number
-  status: string
-  total_price: number
-  notes: string | null
-  availability_slots: {
-    date: string
-    start_time: string
-    end_time: string
-    experiences: {
-      name: string
-    }
-  }
-}
-
-function BookingCard({ booking }: { booking: Booking }) {
-  const slot = booking.availability_slots
-  const dateStr = new Date(slot.date + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const timeStr = new Date(`2000-01-01T${slot.start_time}`).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold text-gray-900">{slot.experiences.name}</h3>
-          <p className="mt-1 text-sm text-gray-600">
-            {dateStr} at {timeStr}
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            {booking.guest_count} guest{booking.guest_count !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <StatusBadge status={booking.status} />
-      </div>
-    </div>
-  )
 }
 
 export default async function BookingsPage() {
@@ -78,8 +18,8 @@ export default async function BookingsPage() {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Fetch bookings with slot and experience info
-  const { data: bookings } = await supabase
+  // Fetch bookings with slot info
+  const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
     .select(`
       id,
@@ -87,25 +27,61 @@ export default async function BookingsPage() {
       status,
       total_price,
       notes,
-      availability_slots (
+      slot_id,
+      availability_slots!slot_id (
         date,
         start_time,
         end_time,
-        experiences (
-          name
-        )
+        experience_id
       )
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  const allBookings = (bookings ?? []) as unknown as Booking[]
+  if (bookingsError) {
+    console.error('Bookings fetch error:', bookingsError)
+  }
+
+  // Fetch experience names in a separate query to avoid PostgREST multi-level join issues
+  const experienceIds = Array.from(
+    new Set(
+      (bookings ?? [])
+        .map((b: any) => b.availability_slots?.experience_id)
+        .filter(Boolean)
+    )
+  )
+  const experienceMap: Record<string, string> = {}
+  if (experienceIds.length > 0) {
+    const { data: experiences } = await supabase
+      .from('experiences')
+      .select('id, title')
+      .in('id', experienceIds)
+    for (const exp of experiences ?? []) {
+      experienceMap[exp.id] = exp.title
+    }
+  }
+
+  // Normalize bookings into a flat shape for the client component
+  const allBookings = ((bookings ?? []) as any[]).map((b) => ({
+    id: b.id as string,
+    guest_count: b.guest_count as number,
+    status: b.status as string,
+    total_price: b.total_price as number,
+    notes: b.notes as string | null,
+    slot_id: b.slot_id as string,
+    slot_date: (b.availability_slots?.date as string) ?? null,
+    slot_start_time: (b.availability_slots?.start_time as string) ?? null,
+    slot_end_time: (b.availability_slots?.end_time as string) ?? null,
+    experience_name: b.availability_slots?.experience_id
+      ? experienceMap[b.availability_slots.experience_id] ?? 'Slime Experience'
+      : 'Slime Experience',
+  }))
 
   const upcomingBookings = allBookings.filter(
-    (b) => b.availability_slots.date >= today && b.status !== 'cancelled'
+    (b) => b.slot_date && b.slot_date >= today && b.status !== 'cancelled'
   )
   const pastBookings = allBookings.filter(
-    (b) => b.availability_slots.date < today || b.status === 'cancelled'
+    (b) => !b.slot_date || b.slot_date < today || b.status === 'cancelled'
   )
 
   return (
@@ -128,7 +104,11 @@ export default async function BookingsPage() {
           {upcomingBookings.length > 0 ? (
             <div className="space-y-4">
               {upcomingBookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} />
+                <BookingCardInteractive
+                  key={booking.id}
+                  booking={booking}
+                  isUpcoming={true}
+                />
               ))}
             </div>
           ) : (
@@ -149,7 +129,11 @@ export default async function BookingsPage() {
           {pastBookings.length > 0 ? (
             <div className="space-y-4">
               {pastBookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} />
+                <BookingCardInteractive
+                  key={booking.id}
+                  booking={booking}
+                  isUpcoming={false}
+                />
               ))}
             </div>
           ) : (
