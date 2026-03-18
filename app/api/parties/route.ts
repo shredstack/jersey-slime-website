@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
 
 const inquirySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -14,7 +15,6 @@ const inquirySchema = z.object({
   message: z.string().default(''),
 })
 
-const STUDIO_EMAIL = 'hello@jerseyslimestudio.com'
 
 const PACKAGE_LABELS: Record<string, string> = {
   basic: 'Basic — $199',
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
-      to: [STUDIO_EMAIL],
+      to: [STUDIO_CONTACT_EMAIL],
       replyTo: email,
       subject: `New Party Inquiry from ${name}`,
       text: [
