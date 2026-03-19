@@ -4,17 +4,26 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
 
+const DURATION_LABELS: Record<number, string> = {
+  60: '60 minutes (1 hour)',
+  90: '90 minutes (1.5 hours)',
+  120: '120 minutes (2 hours)',
+}
+
 const inquirySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(1, 'Phone number is required').transform((v) => v.replace(/\D/g, '')),
   preferredDate: z.string().min(1, 'Preferred date is required'),
+  preferredTime: z.string().regex(/^\d{2}:\d{2}$/, 'Preferred time is required'),
   guestCount: z.coerce.number().int().min(1).max(30),
   ageRange: z.string().min(1, 'Age range is required'),
+  durationMinutes: z.coerce.number().int().refine((v) => [60, 90, 120].includes(v), {
+    message: 'Duration must be 60, 90, or 120 minutes',
+  }),
   selectedPackage: z.enum(['basic', 'deluxe', 'ultimate']),
   message: z.string().default(''),
 })
-
 
 const PACKAGE_LABELS: Record<string, string> = {
   basic: 'Basic — $199',
@@ -34,8 +43,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const { name, email, phone, preferredDate, guestCount, ageRange, selectedPackage, message } =
-      parsed.data
+    const {
+      name,
+      email,
+      phone,
+      preferredDate,
+      preferredTime,
+      guestCount,
+      ageRange,
+      durationMinutes,
+      selectedPackage,
+      message,
+    } = parsed.data
 
     // Attach user_id if the requester is logged in
     const sessionClient = await createClient()
@@ -47,8 +66,10 @@ export async function POST(request: Request) {
       contact_email: email,
       contact_phone: phone,
       preferred_date: preferredDate,
+      preferred_time: preferredTime,
       guest_count: guestCount,
       age_range: ageRange,
+      duration_minutes: durationMinutes,
       message: message || `Package: ${PACKAGE_LABELS[selectedPackage]}`,
       ...(user ? { user_id: user.id } : {}),
     })
@@ -69,6 +90,8 @@ export async function POST(request: Request) {
         `Email: ${email}`,
         `Phone: ${phone}`,
         `Preferred Date: ${preferredDate}`,
+        `Preferred Time: ${preferredTime}`,
+        `Duration: ${DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`}`,
         `Guests: ${guestCount}`,
         `Age Range: ${ageRange}`,
         `Package: ${PACKAGE_LABELS[selectedPackage]}`,

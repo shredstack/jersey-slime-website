@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { createServiceClient } from '@/lib/supabase/server'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatTime } from '@/lib/utils'
 import PartyStatusSelect from './PartyStatusSelect'
 import PartyTotalCostInput from './PartyTotalCostInput'
 
@@ -14,8 +14,8 @@ export default async function AdminPartiesPage() {
   const { data: inquiries } = await supabase
     .from('party_inquiries')
     .select(
-      `id, contact_name, contact_email, contact_phone, preferred_date,
-       guest_count, age_range, message, status, admin_notes, total_cost, created_at,
+      `id, contact_name, contact_email, contact_phone, preferred_date, preferred_time,
+       guest_count, age_range, duration_minutes, message, status, admin_notes, total_cost, created_at,
        package:party_packages(name)`
     )
     .order('created_at', { ascending: false })
@@ -32,7 +32,8 @@ export default async function AdminPartiesPage() {
                 <tr>
                   <th className="px-6 py-3 font-medium">Contact</th>
                   <th className="px-6 py-3 font-medium">Package</th>
-                  <th className="px-6 py-3 font-medium">Preferred Date</th>
+                  <th className="px-6 py-3 font-medium">Preferred Date/Time</th>
+                  <th className="px-6 py-3 font-medium">Duration</th>
                   <th className="px-6 py-3 font-medium">Guests</th>
                   <th className="px-6 py-3 font-medium">Ages</th>
                   <th className="px-6 py-3 font-medium">Total Cost</th>
@@ -53,7 +54,15 @@ export default async function AdminPartiesPage() {
                       </td>
                       <td className="px-6 py-3 text-gray-700">{pkg?.name ?? '—'}</td>
                       <td className="px-6 py-3 text-gray-700">
-                        {formatDate(inquiry.preferred_date)}
+                        <p>{formatDate(inquiry.preferred_date)}</p>
+                        {inquiry.preferred_time && (
+                          <p className="text-xs text-gray-500">
+                            {formatTime(inquiry.preferred_time)}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-gray-700">
+                        {inquiry.duration_minutes ? `${inquiry.duration_minutes} min` : '—'}
                       </td>
                       <td className="px-6 py-3 text-gray-700">{inquiry.guest_count}</td>
                       <td className="px-6 py-3 text-gray-700">{inquiry.age_range}</td>
@@ -67,7 +76,7 @@ export default async function AdminPartiesPage() {
                         <PartyStatusSelect
                           inquiryId={inquiry.id}
                           currentStatus={
-                            inquiry.status as 'new' | 'contacted' | 'confirmed' | 'completed'
+                            inquiry.status as 'new' | 'contacted' | 'confirmed' | 'completed' | 'cancelled'
                           }
                         />
                       </td>

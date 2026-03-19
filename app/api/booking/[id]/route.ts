@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/types'
-
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row']
-type Experience = Database['public']['Tables']['experiences']['Row']
+import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getAvailableSlots } from '@/lib/availability'
+import { formatTime } from '@/lib/utils'
 
 const cancelSchema = z.object({
   action: z.literal('cancel'),
@@ -12,7 +12,8 @@ const cancelSchema = z.object({
 
 const updateSchema = z.object({
   action: z.literal('update'),
-  slot_id: z.string().uuid('Invalid slot ID').optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   guest_count: z.number().int().min(1, 'At least 1 guest is required').optional(),
   notes: z.string().optional(),
 })
@@ -46,18 +47,16 @@ export async function PATCH(
     }
 
     // Fetch the existing booking and verify ownership
-    const { data: rawBooking, error: fetchError } = await supabase
+    const { data: booking, error: fetchError } = await supabase
       .from('bookings')
-      .select('*, availability_slots!slot_id(*)')
+      .select('*')
       .eq('id', id)
       .eq('user_id', user.id)
       .single()
 
-    if (fetchError || !rawBooking) {
+    if (fetchError || !booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
     }
-
-    const booking = rawBooking as any
 
     if (booking.status === 'cancelled') {
       return NextResponse.json(
@@ -67,10 +66,9 @@ export async function PATCH(
     }
 
     // Don't allow changes to past bookings
-    const slot = booking.availability_slots as AvailabilitySlot | null
-    if (slot) {
+    if (booking.booking_date) {
       const today = new Date().toISOString().split('T')[0]
-      if (slot.date < today) {
+      if (booking.booking_date < today) {
         return NextResponse.json(
           { error: 'Cannot modify a past booking' },
           { status: 400 }
@@ -82,7 +80,6 @@ export async function PATCH(
     const data = parsed.data
 
     if (data.action === 'cancel') {
-      // Cancel the booking and restore spots on the old slot
       const { error: updateError } = await service
         .from('bookings')
         .update({ status: 'cancelled' })
@@ -96,12 +93,53 @@ export async function PATCH(
         )
       }
 
-      // Restore spots on the old slot
-      if (slot) {
-        await service
-          .from('availability_slots')
-          .update({ spots_remaining: slot.spots_remaining + booking.guest_count })
-          .eq('id', slot.id)
+      // Send cancellation confirmation email
+      try {
+        const { data: customerProfile } = await service
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', user.id)
+          .single()
+
+        let experienceName = 'Slime Experience'
+        if (booking.experience_id) {
+          const { data: experience } = await service
+            .from('experiences')
+            .select('title')
+            .eq('id', booking.experience_id)
+            .single()
+          if (experience) experienceName = experience.title
+        }
+
+        if (customerProfile?.email) {
+          const resend = new Resend(process.env.RESEND_API_KEY)
+          await resend.emails.send({
+            from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+            to: [customerProfile.email],
+            replyTo: STUDIO_CONTACT_EMAIL,
+            subject: 'Your Booking Has Been Cancelled — Jersey Slime Studio',
+            text: [
+              `Hi ${customerProfile.full_name},`,
+              '',
+              'Your booking has been cancelled as requested.',
+              '',
+              `Experience: ${experienceName}`,
+              ...(booking.booking_date
+                ? [`Date: ${booking.booking_date}`]
+                : []),
+              ...(booking.start_time && booking.end_time
+                ? [`Time: ${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`]
+                : []),
+              `Guests: ${booking.guest_count}`,
+              '',
+              "If you'd like to rebook or have any questions, please reply to this email.",
+              '',
+              '— Jersey Slime Studio',
+            ].join('\n'),
+          })
+        }
+      } catch (emailErr) {
+        console.error('Booking cancellation email error:', emailErr)
       }
 
       return NextResponse.json({ success: true })
@@ -109,75 +147,53 @@ export async function PATCH(
 
     // action === 'update'
     const updates: Record<string, unknown> = {}
-    let newSlot: AvailabilitySlot | null = null
+    const experienceId = booking.experience_id
 
-    // If changing the slot (rescheduling)
-    if (data.slot_id && data.slot_id !== booking.slot_id) {
-      const { data: fetchedSlot, error: slotError } = await service
-        .from('availability_slots')
-        .select('*')
-        .eq('id', data.slot_id)
-        .single()
+    if (!experienceId) {
+      return NextResponse.json({ error: 'Booking has no associated experience' }, { status: 400 })
+    }
 
-      if (slotError || !fetchedSlot) {
-        return NextResponse.json(
-          { error: 'New time slot not found' },
-          { status: 404 }
-        )
-      }
+    // Get experience for duration and pricing
+    const { data: experience } = await service
+      .from('experiences')
+      .select('price_per_person, duration_minutes')
+      .eq('id', experienceId)
+      .single()
 
-      newSlot = fetchedSlot as AvailabilitySlot
-      const neededGuests = data.guest_count ?? booking.guest_count
+    if (!experience) {
+      return NextResponse.json({ error: 'Associated experience not found' }, { status: 404 })
+    }
 
-      if (newSlot.spots_remaining < neededGuests) {
-        return NextResponse.json(
-          { error: 'Not enough spots available for the selected time', available: newSlot.spots_remaining },
-          { status: 409 }
-        )
-      }
+    const newDate = data.date ?? booking.booking_date
+    const newStartTime = data.start_time ?? booking.start_time
+    const newGuestCount = data.guest_count ?? booking.guest_count
 
-      updates.slot_id = data.slot_id
+    // If date or time changed, verify the new slot is available
+    if (data.date || data.start_time) {
+      if (newDate && newStartTime) {
+        const availableSlots = await getAvailableSlots(newDate, experienceId, supabase)
+        const slotIsAvailable = availableSlots.some((s) => s.start_time === newStartTime)
 
-      // Recalculate price based on the new experience
-      const { data: experience } = await service
-        .from('experiences')
-        .select('*')
-        .eq('id', newSlot.experience_id)
-        .single() as { data: Experience | null; error: unknown }
+        if (!slotIsAvailable) {
+          return NextResponse.json(
+            { error: 'This time slot is no longer available.' },
+            { status: 409 }
+          )
+        }
 
-      if (experience) {
-        updates.total_price = experience.price_per_person * neededGuests
+        updates.booking_date = newDate
+        updates.start_time = newStartTime
+
+        // Compute new end_time
+        const [h, m] = newStartTime.split(':').map(Number)
+        const endMinutes = h * 60 + m + experience.duration_minutes
+        updates.end_time = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`
       }
     }
 
-    // If changing guest count (without changing slot)
     if (data.guest_count !== undefined && data.guest_count !== booking.guest_count) {
-      const targetSlot = newSlot ?? (slot as AvailabilitySlot)
-      const spotsDelta = data.guest_count - booking.guest_count
-
-      // If increasing guests on the same slot, check capacity
-      if (!newSlot && spotsDelta > 0 && targetSlot.spots_remaining < spotsDelta) {
-        return NextResponse.json(
-          { error: 'Not enough spots available', available: targetSlot.spots_remaining + booking.guest_count },
-          { status: 409 }
-        )
-      }
-
       updates.guest_count = data.guest_count
-
-      // Recalculate price if not already done above
-      if (!updates.total_price) {
-        const expId = targetSlot.experience_id
-        const { data: experience } = await service
-          .from('experiences')
-          .select('*')
-          .eq('id', expId)
-          .single() as { data: Experience | null; error: unknown }
-
-        if (experience) {
-          updates.total_price = experience.price_per_person * data.guest_count
-        }
-      }
+      updates.total_price = experience.price_per_person * data.guest_count
     }
 
     if (data.notes !== undefined) {
@@ -188,7 +204,11 @@ export async function PATCH(
       return NextResponse.json({ success: true, message: 'No changes' })
     }
 
-    // Apply the booking update
+    // Recalculate price if guest count changed
+    if (updates.guest_count) {
+      updates.total_price = experience.price_per_person * (updates.guest_count as number)
+    }
+
     const { error: updateError } = await service
       .from('bookings')
       .update(updates)
@@ -200,32 +220,6 @@ export async function PATCH(
         { error: 'Failed to update booking' },
         { status: 500 }
       )
-    }
-
-    // Update spots_remaining on slots
-    if (newSlot) {
-      const neededGuests = (updates.guest_count as number) ?? booking.guest_count
-      // Restore spots on old slot
-      if (slot) {
-        await service
-          .from('availability_slots')
-          .update({ spots_remaining: slot.spots_remaining + booking.guest_count })
-          .eq('id', slot.id)
-      }
-      // Deduct spots on new slot
-      await service
-        .from('availability_slots')
-        .update({ spots_remaining: newSlot.spots_remaining - neededGuests })
-        .eq('id', newSlot.id)
-    } else if (updates.guest_count !== undefined) {
-      // Same slot, different guest count — adjust spots
-      const delta = booking.guest_count - (updates.guest_count as number)
-      if (slot) {
-        await service
-          .from('availability_slots')
-          .update({ spots_remaining: slot.spots_remaining + delta })
-          .eq('id', slot.id)
-      }
     }
 
     return NextResponse.json({ success: true })

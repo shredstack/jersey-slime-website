@@ -119,6 +119,14 @@ npx supabase migration list
 npx supabase stop
 ```
 
+## Making a User an Admin
+
+After a user signs up, promote them to admin by running this SQL in the Supabase SQL Editor (or via `psql`):
+
+```sql
+UPDATE profiles SET role = 'admin' WHERE email = 'the-users-email@example.com';
+```
+
 ## Key Features (v1)
 
 - **SEO-optimized** — discoverable when searching for slime experiences in Utah

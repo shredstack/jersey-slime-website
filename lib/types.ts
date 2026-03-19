@@ -124,39 +124,58 @@ export type Database = {
       }
       bookings: {
         Row: {
+          booking_date: string | null
           created_at: string
+          end_time: string | null
+          experience_id: string | null
           guest_count: number
           id: string
           notes: string | null
-          slot_id: string
+          slot_id: string | null
+          start_time: string | null
           status: string
           total_price: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          booking_date?: string | null
           created_at?: string
+          end_time?: string | null
+          experience_id?: string | null
           guest_count: number
           id?: string
           notes?: string | null
-          slot_id: string
+          slot_id?: string | null
+          start_time?: string | null
           status?: string
           total_price: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          booking_date?: string | null
           created_at?: string
+          end_time?: string | null
+          experience_id?: string | null
           guest_count?: number
           id?: string
           notes?: string | null
-          slot_id?: string
+          slot_id?: string | null
+          start_time?: string | null
           status?: string
           total_price?: number
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_slot_id_fkey"
             columns: ["slot_id"]
@@ -178,9 +197,14 @@ export type Database = {
           created_at: string
           description: string
           duration_minutes: number
+          event_date: string | null
+          event_end_time: string | null
+          event_start_time: string | null
           id: string
           images: string[]
           is_active: boolean
+          is_special: boolean
+          max_bookings: number | null
           max_capacity: number
           price_per_person: number
           sort_order: number
@@ -191,9 +215,14 @@ export type Database = {
           created_at?: string
           description: string
           duration_minutes: number
+          event_date?: string | null
+          event_end_time?: string | null
+          event_start_time?: string | null
           id?: string
           images?: string[]
           is_active?: boolean
+          is_special?: boolean
+          max_bookings?: number | null
           max_capacity: number
           price_per_person: number
           sort_order?: number
@@ -204,9 +233,14 @@ export type Database = {
           created_at?: string
           description?: string
           duration_minutes?: number
+          event_date?: string | null
+          event_end_time?: string | null
+          event_start_time?: string | null
           id?: string
           images?: string[]
           is_active?: boolean
+          is_special?: boolean
+          max_bookings?: number | null
           max_capacity?: number
           price_per_person?: number
           sort_order?: number
@@ -223,11 +257,13 @@ export type Database = {
           contact_name: string
           contact_phone: string | null
           created_at: string
+          duration_minutes: number | null
           guest_count: number
           id: string
           message: string
           package_id: string | null
           preferred_date: string
+          preferred_time: string | null
           status: string
           total_cost: number | null
           updated_at: string
@@ -240,11 +276,13 @@ export type Database = {
           contact_name: string
           contact_phone?: string | null
           created_at?: string
+          duration_minutes?: number | null
           guest_count: number
           id?: string
           message: string
           package_id?: string | null
           preferred_date: string
+          preferred_time?: string | null
           status?: string
           total_cost?: number | null
           updated_at?: string
@@ -257,11 +295,13 @@ export type Database = {
           contact_name?: string
           contact_phone?: string | null
           created_at?: string
+          duration_minutes?: number | null
           guest_count?: number
           id?: string
           message?: string
           package_id?: string | null
           preferred_date?: string
+          preferred_time?: string | null
           status?: string
           total_cost?: number | null
           updated_at?: string
@@ -355,6 +395,66 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      studio_hour_overrides: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          date: string
+          id: string
+          is_closed: boolean
+          note: string | null
+          open_time: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          is_closed?: boolean
+          note?: string | null
+          open_time?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          is_closed?: boolean
+          note?: string | null
+          open_time?: string | null
+        }
+        Relationships: []
+      }
+      studio_hours: {
+        Row: {
+          close_time: string
+          created_at: string
+          day_of_week: number
+          id: string
+          is_closed: boolean
+          open_time: string
+          updated_at: string
+        }
+        Insert: {
+          close_time: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_closed?: boolean
+          open_time: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_closed?: boolean
+          open_time?: string
           updated_at?: string
         }
         Relationships: []

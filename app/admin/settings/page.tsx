@@ -1,130 +1,60 @@
 import type { Metadata } from 'next'
+import { createServiceClient } from '@/lib/supabase/server'
+import StudioCapacityForm from './StudioCapacityForm'
+import SiteSettingsForm from './SiteSettingsForm'
+import StudioHoursForm from '../availability/StudioHoursForm'
+import OverridesManager from '../availability/OverridesManager'
 
 export const metadata: Metadata = {
   title: 'Site Settings',
 }
 
-export default function AdminSettingsPage() {
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+export default async function AdminSettingsPage() {
+  const supabase = createServiceClient()
+
+  const { data: hours } = await supabase
+    .from('studio_hours')
+    .select('*')
+    .order('day_of_week')
+
+  const { data: overrides } = await supabase
+    .from('studio_hour_overrides')
+    .select('*')
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date')
+
+  const fullHours = DAY_NAMES.map((name, i) => {
+    const existing = hours?.find((h) => h.day_of_week === i)
+    return {
+      day_of_week: i,
+      day_name: name,
+      open_time: existing?.open_time ?? '10:00',
+      close_time: existing?.close_time ?? '18:00',
+      is_closed: existing?.is_closed ?? true,
+    }
+  })
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Site Settings</h1>
 
-      <form className="space-y-8 max-w-2xl">
-        {/* Business Hours */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Hours</h2>
-          <div className="space-y-3">
-            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
-              (day) => (
-                <div key={day} className="flex items-center gap-4">
-                  <span className="w-28 text-sm font-medium text-gray-700">{day}</span>
-                  <input
-                    type="time"
-                    defaultValue="10:00"
-                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-                  />
-                  <span className="text-gray-400">to</span>
-                  <input
-                    type="time"
-                    defaultValue={day === 'Sunday' ? '17:00' : '20:00'}
-                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-                  />
-                </div>
-              )
-            )}
-          </div>
-        </section>
+      <div className="space-y-8 max-w-2xl">
+        {/* Studio Capacity */}
+        <StudioCapacityForm />
+      </div>
 
-        {/* Address */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Address</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
-              <input
-                type="text"
-                defaultValue="123 Slime Lane"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                <input
-                  type="text"
-                  defaultValue="Salt Lake City"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                <input
-                  type="text"
-                  defaultValue="UT"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>
-                <input
-                  type="text"
-                  defaultValue="84101"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+      {/* Studio Hours */}
+      <div className="max-w-2xl mt-8">
+        <StudioHoursForm initialHours={fullHours} />
+        <OverridesManager initialOverrides={overrides ?? []} />
+      </div>
 
-        {/* Phone */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Phone</h2>
-          <input
-            type="tel"
-            defaultValue="(555) 123-4567"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-          />
-        </section>
-
-        {/* Social Media */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Social Media Links</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
-              <input
-                type="url"
-                defaultValue="https://instagram.com/jerseyslimestudio38"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">TikTok</label>
-              <input
-                type="url"
-                defaultValue="https://tiktok.com/@jerseyslimestudio38"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
-              <input
-                type="url"
-                defaultValue="https://facebook.com/jerseyslimestudio38"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Save */}
-        <button
-          type="button"
-          className="rounded-lg bg-brand-pink px-8 py-3 text-sm font-semibold text-white hover:bg-brand-pink/90 transition-colors"
-        >
-          Save Settings
-        </button>
-      </form>
+      {/* Address, Phone, Email, Social Media */}
+      <div className="max-w-2xl mt-8">
+        <SiteSettingsForm />
+      </div>
     </div>
   )
 }

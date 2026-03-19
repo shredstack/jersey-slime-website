@@ -58,8 +58,10 @@ export default function PartiesPage() {
     email: '',
     phone: '',
     preferredDate: '',
+    preferredTime: '',
     guestCount: '',
     ageRange: '',
+    durationMinutes: '',
     selectedPackage: '',
     message: '',
   })
@@ -281,6 +283,48 @@ export default function PartiesPage() {
                 className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
                 required
               />
+            </div>
+
+            {/* Preferred Time & Duration */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="preferredTime"
+                  className="block text-sm font-semibold text-gray-900"
+                >
+                  Preferred Start Time
+                </label>
+                <input
+                  type="time"
+                  id="preferredTime"
+                  name="preferredTime"
+                  value={formData.preferredTime}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="durationMinutes"
+                  className="block text-sm font-semibold text-gray-900"
+                >
+                  Party Duration
+                </label>
+                <select
+                  id="durationMinutes"
+                  name="durationMinutes"
+                  value={formData.durationMinutes}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
+                  required
+                >
+                  <option value="">Select duration</option>
+                  <option value="60">60 minutes (1 hour)</option>
+                  <option value="90">90 minutes (1.5 hours)</option>
+                  <option value="120">120 minutes (2 hours)</option>
+                </select>
+              </div>
             </div>
 
             {/* Guest Count & Age Range */}

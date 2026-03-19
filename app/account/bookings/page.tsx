@@ -18,7 +18,7 @@ export default async function BookingsPage() {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Fetch bookings with slot info
+  // Fetch bookings with direct experience join (no more availability_slots)
   const { data: bookings, error: bookingsError } = await supabase
     .from('bookings')
     .select(`
@@ -27,38 +27,17 @@ export default async function BookingsPage() {
       status,
       total_price,
       notes,
-      slot_id,
-      availability_slots!slot_id (
-        date,
-        start_time,
-        end_time,
-        experience_id
-      )
+      booking_date,
+      start_time,
+      end_time,
+      experience_id,
+      experience:experiences(title)
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   if (bookingsError) {
     console.error('Bookings fetch error:', bookingsError)
-  }
-
-  // Fetch experience names in a separate query to avoid PostgREST multi-level join issues
-  const experienceIds = Array.from(
-    new Set(
-      (bookings ?? [])
-        .map((b: any) => b.availability_slots?.experience_id)
-        .filter(Boolean)
-    )
-  )
-  const experienceMap: Record<string, string> = {}
-  if (experienceIds.length > 0) {
-    const { data: experiences } = await supabase
-      .from('experiences')
-      .select('id, title')
-      .in('id', experienceIds)
-    for (const exp of experiences ?? []) {
-      experienceMap[exp.id] = exp.title
-    }
   }
 
   // Normalize bookings into a flat shape for the client component
@@ -68,13 +47,10 @@ export default async function BookingsPage() {
     status: b.status as string,
     total_price: b.total_price as number,
     notes: b.notes as string | null,
-    slot_id: b.slot_id as string,
-    slot_date: (b.availability_slots?.date as string) ?? null,
-    slot_start_time: (b.availability_slots?.start_time as string) ?? null,
-    slot_end_time: (b.availability_slots?.end_time as string) ?? null,
-    experience_name: b.availability_slots?.experience_id
-      ? experienceMap[b.availability_slots.experience_id] ?? 'Slime Experience'
-      : 'Slime Experience',
+    slot_date: b.booking_date as string | null,
+    slot_start_time: b.start_time as string | null,
+    slot_end_time: b.end_time as string | null,
+    experience_name: (b.experience as { title: string } | null)?.title ?? 'Slime Experience',
   }))
 
   const upcomingBookings = allBookings.filter(

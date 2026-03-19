@@ -13,9 +13,9 @@ export default async function AdminBookingsPage() {
   const { data: bookings } = await supabase
     .from('bookings')
     .select(
-      `id, guest_count, total_price, status, notes, created_at,
+      `id, guest_count, total_price, status, notes, booking_date, start_time, end_time, created_at,
        profile:profiles(full_name, email, phone),
-       slot:availability_slots(date, start_time, end_time, experience:experiences(title))`
+       experience:experiences(title)`
     )
     .order('created_at', { ascending: false })
 
@@ -44,26 +44,23 @@ export default async function AdminBookingsPage() {
                     email: string
                     phone: string | null
                   } | null
-                  const slot = booking.slot as {
-                    date: string
-                    start_time: string
-                    end_time: string
-                    experience: { title: string } | null
-                  } | null
+                  const experience = booking.experience as { title: string } | null
                   return (
                     <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-3">
                         <p className="font-medium text-gray-900">{profile?.full_name ?? '—'}</p>
                         <p className="text-xs text-gray-500">{profile?.email ?? ''}</p>
                       </td>
-                      <td className="px-6 py-3 text-gray-700">{slot?.experience?.title ?? '—'}</td>
+                      <td className="px-6 py-3 text-gray-700">{experience?.title ?? '—'}</td>
                       <td className="px-6 py-3 text-gray-700">
-                        {slot ? (
+                        {booking.booking_date ? (
                           <>
-                            <p>{formatDate(slot.date)}</p>
-                            <p className="text-xs text-gray-500">
-                              {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
-                            </p>
+                            <p>{formatDate(booking.booking_date)}</p>
+                            {booking.start_time && booking.end_time && (
+                              <p className="text-xs text-gray-500">
+                                {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
+                              </p>
+                            )}
                           </>
                         ) : (
                           '—'

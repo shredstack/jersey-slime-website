@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type InquiryStatus = 'new' | 'contacted' | 'confirmed' | 'completed'
+type InquiryStatus = 'new' | 'contacted' | 'confirmed' | 'completed' | 'cancelled'
 
 export default function PartyStatusSelect({
   inquiryId,
@@ -35,9 +35,11 @@ export default function PartyStatusSelect({
   const colorClass =
     status === 'confirmed' || status === 'completed'
       ? 'text-green-700 bg-green-50 border-green-200'
-      : status === 'contacted'
-        ? 'text-blue-700 bg-blue-50 border-blue-200'
-        : 'text-yellow-700 bg-yellow-50 border-yellow-200'
+      : status === 'cancelled'
+        ? 'text-red-700 bg-red-50 border-red-200'
+        : status === 'contacted'
+          ? 'text-blue-700 bg-blue-50 border-blue-200'
+          : 'text-yellow-700 bg-yellow-50 border-yellow-200'
 
   return (
     <select
@@ -50,6 +52,7 @@ export default function PartyStatusSelect({
       <option value="contacted">contacted</option>
       <option value="confirmed">confirmed</option>
       <option value="completed">completed</option>
+      <option value="cancelled">cancelled</option>
     </select>
   )
 }

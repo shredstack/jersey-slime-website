@@ -13,12 +13,13 @@ export function formatPrice(cents: number): string {
 }
 
 export function formatDate(date: string | Date): string {
+  const d = typeof date === 'string' ? new Date(date + 'T00:00:00') : date
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 export function formatTime(time: string): string {
