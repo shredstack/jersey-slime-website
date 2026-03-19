@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Fredoka } from 'next/font/google'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import LayoutShell from '@/components/layout/LayoutShell'
 import './globals.css'
 
 const inter = Inter({
@@ -95,9 +96,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <Header />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <LayoutShell header={<Header />} footer={<Footer />}>
+          {children}
+        </LayoutShell>
       </body>
     </html>
   )

@@ -49,6 +49,16 @@ export default function Header() {
     return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileMenuOpen])
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -80,7 +90,7 @@ export default function Header() {
     : user?.email?.[0]?.toUpperCase() ?? '?'
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white lg:bg-white/90 lg:backdrop-blur-md border-b border-purple-100 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo / Brand */}
@@ -230,11 +240,11 @@ export default function Header() {
 
       {/* Slide-out panel */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-xl transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-purple-100">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-purple-100 shrink-0">
           <span className="text-lg font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent font-display">
             Menu
           </span>
@@ -248,6 +258,7 @@ export default function Header() {
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto overscroll-contain">
         <nav className="flex flex-col px-4 py-4 gap-1">
           {navLinks.map((link) => (
             <Link
@@ -261,7 +272,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="px-4 pt-2 space-y-2">
+        <div className="px-4 pt-2 pb-4 space-y-2">
           {user ? (
             <>
               {/* User info */}
@@ -331,6 +342,7 @@ export default function Header() {
               Login / Sign Up
             </Link>
           )}
+        </div>
         </div>
       </div>
     </header>
