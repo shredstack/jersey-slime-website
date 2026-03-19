@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Shop Our Slime',
@@ -31,17 +30,12 @@ export default function ShopPage() {
       {/* Shopify CTA */}
       <section className="py-12 md:py-16">
         <div className="mx-auto max-w-3xl px-4">
-          <Link
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group block overflow-hidden rounded-3xl bg-gradient-to-br from-brand-pink via-brand-purple to-brand-blue p-1 shadow-lg transition-shadow hover:shadow-2xl"
-          >
+          <div className="block overflow-hidden rounded-3xl bg-gradient-to-br from-gray-300 via-gray-400 to-gray-300 p-1 shadow-lg opacity-75">
             <div className="rounded-[1.35rem] bg-white p-8 md:p-12">
               <div className="text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-pink/10">
+                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
                   <svg
-                    className="h-8 w-8 text-brand-pink"
+                    className="h-8 w-8 text-gray-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
@@ -55,32 +49,19 @@ export default function ShopPage() {
                   </svg>
                 </div>
                 <h2 className="font-display text-2xl font-bold text-gray-900 md:text-3xl">
-                  Visit Our Shopify Store
+                  Shopify Store Coming Soon
                 </h2>
                 <p className="mx-auto mt-3 max-w-lg text-gray-600">
-                  Our full slime collection is available on our Shopify store. Browse dozens of
+                  Our full slime collection will be available on our Shopify store. Browse dozens of
                   unique slimes, seasonal specials, and slime-making kits — all shipped directly to
                   your door.
                 </p>
-                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-pink px-8 py-3 font-semibold text-white transition-colors group-hover:bg-brand-purple">
-                  Shop Now
-                  <svg
-                    className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                    />
-                  </svg>
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-gray-400 px-8 py-3 font-semibold text-white cursor-not-allowed">
+                  Coming Soon
                 </div>
               </div>
             </div>
-          </Link>
+          </div>
         </div>
       </section>
 
