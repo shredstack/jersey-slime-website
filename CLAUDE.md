@@ -25,7 +25,7 @@ Jersey Slime is a public-facing website for a slime experience studio in Utah. I
 ## Database & Migrations
 
 - Migration files live in `supabase/migrations/`
-- **Always apply migrations locally** using `npx supabase db push` or `npx supabase migration up` during development
+- **Always apply migrations to the local Supabase instance** using `npx supabase migration up --local` during development (or `npx supabase db reset` to re-apply all migrations from scratch)
 - **Never apply migrations directly to production** — a GitHub Actions workflow automatically applies migrations when a PR is approved and merged to `main`
 - When creating new migrations, use `npx supabase migration new <name>` to generate a timestamped file
 - All tables with user data must have Row Level Security (RLS) policies

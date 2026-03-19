@@ -2,6 +2,13 @@
 
 import { useState, type FormEvent } from 'react'
 
+interface StudioHour {
+  day_of_week: number
+  open_time: string
+  close_time: string
+  is_closed: boolean
+}
+
 interface FormData {
   name: string
   email: string
@@ -9,7 +16,81 @@ interface FormData {
   message: string
 }
 
-export default function ContactForm() {
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+function formatTime(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number)
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const h = hours % 12 || 12
+  return minutes === 0 ? `${h}:00 ${ampm}` : `${h}:${String(minutes).padStart(2, '0')} ${ampm}`
+}
+
+function groupConsecutiveDays(hours: StudioHour[]): string[] {
+  const sorted = [...hours].sort((a, b) => {
+    // Reorder so Monday (1) comes first: 1,2,3,4,5,6,0
+    const orderA = a.day_of_week === 0 ? 7 : a.day_of_week
+    const orderB = b.day_of_week === 0 ? 7 : b.day_of_week
+    return orderA - orderB
+  })
+
+  const lines: string[] = []
+  let i = 0
+
+  while (i < sorted.length) {
+    const current = sorted[i]
+    if (current.is_closed) {
+      i++
+      continue
+    }
+
+    // Find consecutive days with the same hours
+    let j = i + 1
+    while (
+      j < sorted.length &&
+      !sorted[j].is_closed &&
+      sorted[j].open_time === current.open_time &&
+      sorted[j].close_time === current.close_time
+    ) {
+      j++
+    }
+
+    const startDay = DAY_NAMES[current.day_of_week]
+    const endDay = DAY_NAMES[sorted[j - 1].day_of_week]
+    const timeRange = `${formatTime(current.open_time)} - ${formatTime(current.close_time)}`
+
+    if (j - i === 1) {
+      lines.push(`${startDay}: ${timeRange}`)
+    } else {
+      lines.push(`${startDay} - ${endDay}: ${timeRange}`)
+    }
+
+    i = j
+  }
+
+  // Add closed days
+  const closedDays = sorted.filter((h) => h.is_closed).map((h) => DAY_NAMES[h.day_of_week])
+  if (closedDays.length === 1) {
+    lines.push(`${closedDays[0]}: Closed`)
+  } else if (closedDays.length > 1) {
+    lines.push(`${closedDays.join(', ')}: Closed`)
+  }
+
+  return lines
+}
+
+interface ContactInfo {
+  address: string
+  phone: string
+  email: string
+}
+
+export default function ContactForm({
+  studioHours,
+  contactInfo,
+}: {
+  studioHours: StudioHour[]
+  contactInfo: ContactInfo
+}) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -207,11 +288,7 @@ export default function ContactForm() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Address</h3>
-                    <p className="mt-1 text-gray-600">
-                      123 Slime Street, Suite 38
-                      <br />
-                      Salt Lake City, UT 84101
-                    </p>
+                    <p className="mt-1 text-gray-600">{contactInfo.address}</p>
                   </div>
                 </div>
 
@@ -234,7 +311,7 @@ export default function ContactForm() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone</h3>
-                    <p className="mt-1 text-gray-600">(801) 555-0138</p>
+                    <p className="mt-1 text-gray-600">{contactInfo.phone}</p>
                   </div>
                 </div>
 
@@ -257,7 +334,7 @@ export default function ContactForm() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Email</h3>
-                    <p className="mt-1 text-gray-600">hello@jerseyslimestudio.com</p>
+                    <p className="mt-1 text-gray-600">{contactInfo.email}</p>
                   </div>
                 </div>
 
@@ -279,11 +356,11 @@ export default function ContactForm() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Business Hours</h3>
+                    <h3 className="font-semibold text-gray-900">Studio Hours</h3>
                     <div className="mt-1 space-y-1 text-gray-600">
-                      <p>Monday - Friday: 10:00 AM - 7:00 PM</p>
-                      <p>Saturday: 9:00 AM - 8:00 PM</p>
-                      <p>Sunday: 11:00 AM - 5:00 PM</p>
+                      {groupConsecutiveDays(studioHours).map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
                     </div>
                   </div>
                 </div>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { slugify } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 type BlogPostFormProps = {
   mode: 'create' | 'edit'
@@ -27,8 +28,10 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
   const [isPublished, setIsPublished] = useState(defaultValues?.is_published ?? false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === 'edit')
 
+  const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-generate slug from title in create mode
   useEffect(() => {
@@ -36,6 +39,49 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
       setSlug(slugify(title))
     }
   }, [title, slugManuallyEdited, mode])
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (JPG, PNG, WebP, etc.)')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5MB')
+      return
+    }
+
+    setError(null)
+    setUploading(true)
+
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('blog-images')
+        .upload(fileName, file, { cacheControl: '31536000', upsert: false })
+
+      if (uploadError) {
+        setError(`Upload failed: ${uploadError.message}`)
+        return
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('blog-images')
+        .getPublicUrl(fileName)
+
+      setCoverImageUrl(urlData.publicUrl)
+    } catch {
+      setError('Upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -140,18 +186,66 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
         />
       </div>
 
-      {/* Cover Image URL */}
+      {/* Cover Image Upload */}
       <div>
-        <label htmlFor="cover_image_url" className="block text-sm font-medium text-gray-700 mb-1">
-          Cover Image URL
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Cover Image
         </label>
+
+        {coverImageUrl ? (
+          <div className="space-y-3">
+            <div className="relative aspect-video w-full max-w-md overflow-hidden rounded-lg border border-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={coverImageUrl}
+                alt="Cover preview"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCoverImageUrl('')
+                if (fileInputRef.current) fileInputRef.current.value = ''
+              }}
+              className="text-sm text-red-600 hover:text-red-700 font-medium"
+            >
+              Remove image
+            </button>
+          </div>
+        ) : (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            className="flex flex-col items-center justify-center w-full max-w-md h-40 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-brand-purple hover:bg-gray-100 transition-colors"
+          >
+            {uploading ? (
+              <p className="text-sm text-gray-500">Uploading...</p>
+            ) : (
+              <>
+                <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
+                </svg>
+                <p className="text-sm text-gray-500">Click to upload an image</p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP up to 5MB</p>
+              </>
+            )}
+          </div>
+        )}
+
         <input
-          id="cover_image_url"
-          type="url"
-          value={coverImageUrl}
-          onChange={(e) => setCoverImageUrl(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
-          placeholder="https://…"
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
         />
       </div>
 
@@ -197,7 +291,7 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || uploading}
           className="rounded-lg bg-brand-pink px-5 py-2 text-sm font-semibold text-white hover:bg-brand-pink/90 transition-colors disabled:opacity-50"
         >
           {submitting

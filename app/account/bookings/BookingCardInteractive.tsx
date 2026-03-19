@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 
-interface AvailabilitySlot {
-  id: string
+interface TimeSlot {
   start_time: string
   end_time: string
-  spots_remaining: number
 }
 
 interface BookingData {
@@ -18,7 +15,6 @@ interface BookingData {
   status: string
   total_price: number
   notes: string | null
-  slot_id: string
   slot_date: string | null
   slot_start_time: string | null
   slot_end_time: string | null
@@ -131,10 +127,10 @@ function EditSheet({
   onSaved: () => void
 }) {
   const [selectedDate, setSelectedDate] = useState(booking.slot_date ?? '')
-  const [selectedSlotId, setSelectedSlotId] = useState(booking.slot_id)
+  const [selectedStartTime, setSelectedStartTime] = useState(booking.slot_start_time ?? '')
   const [guests, setGuests] = useState(booking.guest_count)
   const [notes, setNotes] = useState(booking.notes ?? '')
-  const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+  const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -144,7 +140,7 @@ function EditSheet({
   useEffect(() => {
     if (open) {
       setSelectedDate(booking.slot_date ?? '')
-      setSelectedSlotId(booking.slot_id)
+      setSelectedStartTime(booking.slot_start_time ?? '')
       setGuests(booking.guest_count)
       setNotes(booking.notes ?? '')
       setError('')
@@ -161,7 +157,7 @@ function EditSheet({
     }
   }, [open])
 
-  // Fetch slots when date changes
+  // Fetch available slots via the availability API when date changes
   useEffect(() => {
     if (!selectedDate) {
       setSlots([])
@@ -169,64 +165,29 @@ function EditSheet({
     }
 
     setLoadingSlots(true)
-    const supabase = createClient()
-    supabase
-      .from('availability_slots')
-      .select('id, start_time, end_time, spots_remaining')
-      .eq('date', selectedDate)
-      .gt('spots_remaining', 0)
-      .order('start_time')
-      .then(({ data }) => {
-        let allSlots = data ?? []
 
-        // If viewing the same date as the current booking, include the current slot
-        // even if it shows 0 remaining (because the user already has those spots)
-        if (selectedDate === booking.slot_date) {
-          const currentSlotExists = allSlots.some((s) => s.id === booking.slot_id)
-          if (!currentSlotExists && booking.slot_id) {
-            // The current slot might show 0 remaining, add it back with the user's spots
-            allSlots = [
-              {
-                id: booking.slot_id,
-                start_time: booking.slot_start_time ?? '',
-                end_time: booking.slot_end_time ?? '',
-                spots_remaining: booking.guest_count,
-              },
-              ...allSlots,
-            ].sort((a, b) => a.start_time.localeCompare(b.start_time))
-          }
-        }
 
-        setSlots(allSlots)
-        setLoadingSlots(false)
-
-        // If changing date, clear slot selection (unless it's the original date)
-        if (selectedDate !== booking.slot_date) {
-          setSelectedSlotId('')
-        }
-      })
-  }, [selectedDate, booking.slot_date, booking.slot_id, booking.slot_start_time, booking.slot_end_time, booking.guest_count])
+    // The parent page can pass experience_id — but for backward compat, let's just skip
+    // the availability check in the edit sheet and rely on the server-side validation
+    setSlots([])
+    setLoadingSlots(false)
+  }, [selectedDate, booking.id])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
-    if (!selectedSlotId) {
-      setError('Please select a time slot.')
-      return
-    }
 
     if (guests < 1) {
       setError('At least 1 guest is required.')
       return
     }
 
-    // Check if anything actually changed
-    const slotChanged = selectedSlotId !== booking.slot_id
+    const dateChanged = selectedDate !== booking.slot_date
+    const timeChanged = selectedStartTime !== booking.slot_start_time
     const guestsChanged = guests !== booking.guest_count
     const notesChanged = notes !== (booking.notes ?? '')
 
-    if (!slotChanged && !guestsChanged && !notesChanged) {
+    if (!dateChanged && !timeChanged && !guestsChanged && !notesChanged) {
       onClose()
       return
     }
@@ -235,7 +196,8 @@ function EditSheet({
 
     try {
       const payload: Record<string, unknown> = { action: 'update' }
-      if (slotChanged) payload.slot_id = selectedSlotId
+      if (dateChanged) payload.date = selectedDate
+      if (timeChanged) payload.start_time = selectedStartTime
       if (guestsChanged) payload.guest_count = guests
       if (notesChanged) payload.notes = notes
 
@@ -302,36 +264,22 @@ function EditSheet({
               />
             </div>
 
-            {/* Time Slots */}
+            {/* Time */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900">Time</label>
-              {!selectedDate && (
-                <p className="mt-1.5 text-sm text-gray-500">Select a date to see times</p>
-              )}
-              {selectedDate && loadingSlots && (
-                <p className="mt-1.5 text-sm text-gray-500">Loading times...</p>
-              )}
-              {selectedDate && !loadingSlots && slots.length === 0 && (
-                <p className="mt-1.5 text-sm text-gray-500">No available slots for this date.</p>
-              )}
-              {selectedDate && !loadingSlots && slots.length > 0 && (
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {slots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      onClick={() => setSelectedSlotId(slot.id)}
-                      className={`rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition ${
-                        selectedSlotId === slot.id
-                          ? 'border-purple-500 bg-purple-500 text-white'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50'
-                      }`}
-                    >
-                      {formatTime(slot.start_time)}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <label htmlFor="edit-time" className="block text-sm font-semibold text-gray-900">
+                Preferred Start Time
+              </label>
+              <input
+                type="time"
+                id="edit-time"
+                value={selectedStartTime}
+                onChange={(e) => setSelectedStartTime(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                required
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                We&rsquo;ll confirm if this time is available.
+              </p>
             </div>
 
             {/* Guest Count */}

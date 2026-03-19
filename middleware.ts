@@ -71,7 +71,23 @@ export async function middleware(request: NextRequest) {
   // Refresh the session - important for Server Components
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
+
+  // If the refresh token is invalid/expired, clear the stale auth cookies
+  if (userError && userError.message?.includes('Refresh Token')) {
+    const url = request.nextUrl.clone()
+    const response = request.nextUrl.pathname.startsWith('/account') || request.nextUrl.pathname.startsWith('/admin')
+      ? NextResponse.redirect(new URL('/login', url))
+      : NextResponse.next({ request })
+    // Clear all supabase auth cookies to prevent repeated errors
+    request.cookies.getAll().forEach((cookie) => {
+      if (cookie.name.startsWith(COOKIE_PREFIX)) {
+        response.cookies.delete(cookie.name)
+      }
+    })
+    return response
+  }
 
   // Redirect authenticated users away from /login
   if (user && request.nextUrl.pathname === '/login') {

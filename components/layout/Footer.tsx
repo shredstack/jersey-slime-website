@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { createClient } from '@/lib/supabase/server'
+import { getSiteSettings } from '@/lib/site-settings'
 
 const exploreLinks = [
   { href: '/', label: 'Home' },
@@ -15,14 +17,22 @@ const resourceLinks = [
   { href: '/shop', label: 'Shop' },
 ]
 
-const socialLinks = [
-  { href: '#', label: 'Instagram' },
-  { href: '#', label: 'TikTok' },
-  { href: '#', label: 'Facebook' },
-  { href: '#', label: 'YouTube' },
-]
+const DAY_ABBREV = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export default function Footer() {
+function formatTime(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number)
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const h = hours % 12 || 12
+  return minutes === 0 ? `${h} ${ampm}` : `${h}:${String(minutes).padStart(2, '0')} ${ampm}`
+}
+
+export default async function Footer() {
+  const supabase = await createClient()
+  const siteSettings = await getSiteSettings()
+  const { data: studioHours } = await supabase
+    .from('studio_hours')
+    .select('day_of_week, open_time, close_time, is_closed')
+    .order('day_of_week')
   return (
     <footer className="bg-gradient-to-b from-purple-50 to-pink-50 border-t border-purple-100">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
@@ -45,22 +55,6 @@ export default function Footer() {
               Utah&apos;s most colorful slime-making experience studio. Stretch
               your creativity, squish your stress, and make memories that stick!
             </p>
-
-            {/* Social links */}
-            <div className="mt-5 flex gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-white shadow-sm border border-purple-100 text-gray-500 transition-colors hover:text-pink-500 hover:border-pink-200 hover:shadow-md"
-                  aria-label={social.label}
-                >
-                  <span className="text-xs font-semibold">
-                    {social.label.charAt(0)}
-                  </span>
-                </a>
-              ))}
-            </div>
           </div>
 
           {/* Explore column */}
@@ -108,17 +102,39 @@ export default function Footer() {
             </h3>
             <div className="mt-4 space-y-4 text-sm text-gray-600">
               <div>
-                <p className="font-medium text-gray-800">Business Hours</p>
-                <p className="mt-1">Mon &ndash; Fri: 10 AM &ndash; 7 PM</p>
-                <p>Sat: 10 AM &ndash; 8 PM</p>
-                <p>Sun: 11 AM &ndash; 5 PM</p>
+                <p className="font-medium text-gray-800">Studio Hours</p>
+                {studioHours?.sort((a, b) => {
+                  const orderA = a.day_of_week === 0 ? 7 : a.day_of_week
+                  const orderB = b.day_of_week === 0 ? 7 : b.day_of_week
+                  return orderA - orderB
+                }).reduce<{ label: string; time: string }[]>((lines, h) => {
+                  if (h.is_closed) {
+                    lines.push({ label: DAY_ABBREV[h.day_of_week], time: 'Closed' })
+                    return lines
+                  }
+                  const time = `${formatTime(h.open_time)} \u2013 ${formatTime(h.close_time)}`
+                  const prev = lines[lines.length - 1]
+                  if (prev && prev.time === time && prev.time !== 'Closed') {
+                    // Extend the range
+                    const dash = prev.label.indexOf(' \u2013 ')
+                    const startDay = dash >= 0 ? prev.label.slice(0, dash) : prev.label
+                    prev.label = `${startDay} \u2013 ${DAY_ABBREV[h.day_of_week]}`
+                  } else {
+                    lines.push({ label: DAY_ABBREV[h.day_of_week], time })
+                  }
+                  return lines
+                }, []).map((line, i) => (
+                  <p key={i} className={i === 0 ? 'mt-1' : undefined}>
+                    {line.label}: {line.time}
+                  </p>
+                ))}
               </div>
               <div>
                 <p className="font-medium text-gray-800">Address</p>
                 <p className="mt-1">
-                  123 Slime Street
+                  {siteSettings.address_street}
                   <br />
-                  Salt Lake City, UT 84101
+                  {siteSettings.address_city}, {siteSettings.address_state} {siteSettings.address_zip}
                 </p>
               </div>
             </div>

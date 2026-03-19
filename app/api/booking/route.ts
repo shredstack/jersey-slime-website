@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/types'
-
-type AvailabilitySlot = Database['public']['Tables']['availability_slots']['Row']
-type Experience = Database['public']['Tables']['experiences']['Row']
+import { getAvailableSlots } from '@/lib/availability'
 
 const bookingSchema = z.object({
-  slot_id: z.string().uuid('Invalid slot ID'),
+  experience_id: z.string().uuid('Invalid experience ID'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
   guest_count: z.number().int().min(1, 'At least 1 guest is required'),
   notes: z.string().optional(),
 })
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { slot_id, guest_count, notes } = parsed.data
+    const { experience_id, date, start_time, guest_count, notes } = parsed.data
 
     const supabase = await createClient()
 
@@ -41,41 +40,36 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch the slot with its associated experience to get pricing
-    const { data: slot, error: slotError } = await supabase
-      .from('availability_slots')
-      .select('*')
-      .eq('id', slot_id)
-      .single() as { data: AvailabilitySlot | null; error: unknown }
-
-    if (slotError || !slot) {
-      return NextResponse.json(
-        { error: 'Availability slot not found' },
-        { status: 404 }
-      )
-    }
-
-    if (slot.spots_remaining < guest_count) {
-      return NextResponse.json(
-        {
-          error: 'Not enough spots available',
-          available: slot.spots_remaining,
-        },
-        { status: 409 }
-      )
-    }
-
-    // Fetch the experience to get the price
-    const { data: experience, error: experienceError } = await supabase
+    // Fetch the experience for pricing and duration
+    const { data: experience, error: expError } = await supabase
       .from('experiences')
-      .select('*')
-      .eq('id', slot.experience_id)
-      .single() as { data: Experience | null; error: unknown }
+      .select('price_per_person, duration_minutes, is_active')
+      .eq('id', experience_id)
+      .single()
 
-    if (experienceError || !experience) {
+    if (expError || !experience) {
+      return NextResponse.json({ error: 'Experience not found' }, { status: 404 })
+    }
+
+    if (!experience.is_active) {
+      return NextResponse.json({ error: 'This experience is no longer available' }, { status: 400 })
+    }
+
+    // Compute end_time from experience duration
+    const [h, m] = start_time.split(':').map(Number)
+    const endMinutes = h * 60 + m + experience.duration_minutes
+    const end_time = `${Math.floor(endMinutes / 60).toString().padStart(2, '0')}:${(endMinutes % 60).toString().padStart(2, '0')}`
+
+    // Verify the requested slot is still available
+    const availableSlots = await getAvailableSlots(date, experience_id, supabase)
+    const slotIsAvailable = availableSlots.some(
+      (slot) => slot.start_time === start_time
+    )
+
+    if (!slotIsAvailable) {
       return NextResponse.json(
-        { error: 'Associated experience not found' },
-        { status: 404 }
+        { error: 'This time slot is no longer available. Please choose another time.' },
+        { status: 409 }
       )
     }
 
@@ -86,7 +80,10 @@ export async function POST(request: Request) {
       .from('bookings')
       .insert({
         user_id: user.id,
-        slot_id,
+        experience_id,
+        booking_date: date,
+        start_time,
+        end_time,
         guest_count,
         total_price,
         notes: notes ?? null,
@@ -96,29 +93,12 @@ export async function POST(request: Request) {
 
     if (bookingError) {
       console.error('Booking insert error:', bookingError)
-      return NextResponse.json(
-        { error: 'Failed to create booking' },
-        { status: 500 }
-      )
-    }
-
-    // Decrement spots_remaining on the slot
-    const { error: updateError } = await supabase
-      .from('availability_slots')
-      .update({ spots_remaining: slot.spots_remaining - guest_count })
-      .eq('id', slot_id)
-
-    if (updateError) {
-      console.error('Slot update error:', updateError)
-      // Booking was created but slot wasn't updated -- log for manual resolution
+      return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
     return NextResponse.json({ booking }, { status: 201 })
   } catch (err) {
     console.error('Booking route error:', err)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -9,6 +9,7 @@ const STATUS_LABELS: Record<string, string> = {
   contacted: 'In Review',
   confirmed: 'Confirmed',
   completed: 'Completed',
+  cancelled: 'Cancelled',
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -16,6 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
   contacted: 'bg-blue-100 text-blue-700',
   confirmed: 'bg-green-100 text-green-700',
   completed: 'bg-gray-100 text-gray-600',
+  cancelled: 'bg-red-100 text-red-700',
 }
 
 export interface InquiryData {
@@ -114,7 +116,7 @@ function EditSheet({
       const res = await fetch(`/api/parties/${inquiry.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preferred_date: preferredDate, guest_count: guestCount, age_range: ageRange, message }),
+        body: JSON.stringify({ action: 'update', preferred_date: preferredDate, guest_count: guestCount, age_range: ageRange, message }),
       })
 
       const data = await res.json()
@@ -253,9 +255,31 @@ export default function EventCardInteractive({
 }) {
   const router = useRouter()
   const [showEdit, setShowEdit] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+
+  const canCancel = !['cancelled', 'completed'].includes(inquiry.status)
 
   const packageMatch = inquiry.message.match(/Package:\s*(Basic|Deluxe|Ultimate)/i)
   const packageLabel = packageMatch ? `${packageMatch[1]} Party` : null
+
+  async function handleCancel() {
+    if (!confirm('Are you sure you want to cancel this party inquiry?')) return
+
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/parties/${inquiry.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      })
+
+      if (res.ok) {
+        router.refresh()
+      }
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   return (
     <>
@@ -280,11 +304,18 @@ export default function EventCardInteractive({
           <StatusBadge status={inquiry.status} />
         </div>
 
-        {editable && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
-            <Button variant="secondary" size="sm" onClick={() => setShowEdit(true)}>
-              Edit Inquiry
-            </Button>
+        {(editable || canCancel) && (
+          <div className="mt-4 flex gap-3 border-t border-gray-100 pt-4">
+            {editable && (
+              <Button variant="secondary" size="sm" onClick={() => setShowEdit(true)}>
+                Edit Inquiry
+              </Button>
+            )}
+            {canCancel && (
+              <Button variant="ghost" size="sm" onClick={handleCancel} disabled={cancelling}>
+                {cancelling ? 'Cancelling…' : 'Cancel Inquiry'}
+              </Button>
+            )}
           </div>
         )}
       </div>

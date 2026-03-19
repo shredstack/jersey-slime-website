@@ -5,7 +5,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
 
 const updateSchema = z.object({
-  status: z.enum(['new', 'contacted', 'confirmed', 'completed']).optional(),
+  status: z.enum(['new', 'contacted', 'confirmed', 'completed', 'cancelled']).optional(),
   admin_notes: z.string().optional(),
   total_cost: z.coerce.number().min(0).optional(),
 })
@@ -46,15 +46,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const service = createServiceClient()
 
-  // Check previous status before updating so we only email on actual status change to confirmed
-  let wasAlreadyConfirmed = false
-  if (parsed.data.status === 'confirmed') {
+  // Check previous status before updating so we only email on actual status changes
+  let previousStatus: string | null = null
+  if (parsed.data.status === 'confirmed' || parsed.data.status === 'cancelled') {
     const { data: existing } = await service
       .from('party_inquiries')
       .select('status')
       .eq('id', id)
       .single()
-    wasAlreadyConfirmed = existing?.status === 'confirmed'
+    previousStatus = existing?.status ?? null
   }
 
   const { error } = await service.from('party_inquiries').update(updates).eq('id', id)
@@ -64,8 +64,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Failed to update inquiry' }, { status: 500 })
   }
 
-  // Send confirmation email when party is newly confirmed
-  if (parsed.data.status === 'confirmed' && !wasAlreadyConfirmed) {
+  // Send email when party is newly confirmed or cancelled
+  const isNewConfirmation = parsed.data.status === 'confirmed' && previousStatus !== 'confirmed'
+  const isNewCancellation = parsed.data.status === 'cancelled' && previousStatus !== 'cancelled'
+
+  if (isNewConfirmation || isNewCancellation) {
     try {
       const { data: inquiry } = await service
         .from('party_inquiries')
@@ -75,31 +78,52 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       if (inquiry?.contact_email) {
         const resend = new Resend(process.env.RESEND_API_KEY)
+
+        const subject = isNewConfirmation
+          ? 'Your Party is Confirmed! — Jersey Slime Studio'
+          : 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio'
+
+        const bodyLines = isNewConfirmation
+          ? [
+              `Hi ${inquiry.contact_name},`,
+              '',
+              `Great news! Your party experience has been confirmed.`,
+              '',
+              `Date: ${inquiry.preferred_date}`,
+              `Guests: ${inquiry.guest_count}`,
+              `Age Range: ${inquiry.age_range}`,
+              ...(inquiry.total_cost
+                ? [`Total Cost: $${Number(inquiry.total_cost).toFixed(2)}`]
+                : []),
+              '',
+              `We can't wait to celebrate with you! If you have any questions, just reply to this email.`,
+              '',
+              '— Jersey Slime Studio',
+            ]
+          : [
+              `Hi ${inquiry.contact_name},`,
+              '',
+              `We're sorry to let you know that your party inquiry has been cancelled.`,
+              '',
+              `Date: ${inquiry.preferred_date}`,
+              `Guests: ${inquiry.guest_count}`,
+              `Age Range: ${inquiry.age_range}`,
+              '',
+              `If you have any questions or would like to rebook, please reply to this email.`,
+              '',
+              '— Jersey Slime Studio',
+            ]
+
         await resend.emails.send({
           from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
           to: [inquiry.contact_email],
           replyTo: STUDIO_CONTACT_EMAIL,
-          subject: 'Your Party is Confirmed! — Jersey Slime Studio',
-          text: [
-            `Hi ${inquiry.contact_name},`,
-            '',
-            `Great news! Your party experience has been confirmed.`,
-            '',
-            `Date: ${inquiry.preferred_date}`,
-            `Guests: ${inquiry.guest_count}`,
-            `Age Range: ${inquiry.age_range}`,
-            ...(inquiry.total_cost
-              ? [`Total Cost: $${Number(inquiry.total_cost).toFixed(2)}`]
-              : []),
-            '',
-            `We can't wait to celebrate with you! If you have any questions, just reply to this email.`,
-            '',
-            '— Jersey Slime Studio',
-          ].join('\n'),
+          subject,
+          text: bodyLines.join('\n'),
         })
       }
     } catch (emailErr) {
-      console.error('Party confirmation email error:', emailErr)
+      console.error('Party status email error:', emailErr)
       // Don't fail the status update if the email fails
     }
   }
