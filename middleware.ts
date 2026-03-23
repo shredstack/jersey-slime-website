@@ -3,6 +3,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const COOKIE_PREFIX = 'jersey-slime'
 
+const COOKIE_DEFAULTS = {
+  path: '/',
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+  // 400 days — the maximum Safari will honour for a persistent cookie
+  maxAge: 400 * 24 * 60 * 60,
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -24,7 +32,7 @@ export async function middleware(request: NextRequest) {
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, { ...COOKIE_DEFAULTS, ...options })
           )
         },
       },
@@ -59,10 +67,10 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      // Copy session cookies to the redirect response
+      // Copy session cookies to the redirect response, preserving options
       const redirectResponse = NextResponse.redirect(url)
       supabaseResponse.cookies.getAll().forEach((cookie) => {
-        redirectResponse.cookies.set(cookie.name, cookie.value)
+        redirectResponse.cookies.set(cookie.name, cookie.value, COOKIE_DEFAULTS)
       })
       return redirectResponse
     }
