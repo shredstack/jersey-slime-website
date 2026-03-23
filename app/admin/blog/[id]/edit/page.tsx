@@ -14,7 +14,7 @@ export default async function EditBlogPostPage({ params }: { params: Promise<{ i
 
   const { data: post } = await supabase
     .from('blog_posts')
-    .select('id, title, slug, excerpt, content, cover_image_url, is_published')
+    .select('id, title, slug, excerpt, content, content_format, content_markdown_source, cover_image_url, is_published')
     .eq('id', id)
     .single()
 
@@ -40,6 +40,8 @@ export default async function EditBlogPostPage({ params }: { params: Promise<{ i
             slug: post.slug,
             excerpt: post.excerpt,
             content: post.content,
+            content_format: post.content_format,
+            content_markdown_source: post.content_markdown_source,
             cover_image_url: post.cover_image_url,
             is_published: post.is_published,
           }}

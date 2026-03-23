@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Parties', href: '/admin/parties' },
   { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Experiences', href: '/admin/experiences' },
+  { label: 'Gallery', href: '/admin/gallery' },
   { label: 'Blog', href: '/admin/blog' },
   { label: 'Settings', href: '/admin/settings' },
 ]

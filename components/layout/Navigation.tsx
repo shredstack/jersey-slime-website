@@ -4,6 +4,7 @@ export const navLinks = [
   { href: '/experiences', label: 'Experiences' },
   { href: '/parties', label: 'Parties' },
   { href: '/slime', label: 'Slime Gallery' },
+  { href: '/gallery', label: 'Photos' },
   { href: '/shop', label: 'Shop' },
   { href: '/blog', label: 'Blog' },
   { href: '/contact', label: 'Contact' },

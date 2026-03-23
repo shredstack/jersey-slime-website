@@ -3,6 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeHtml } from '@/lib/sanitize'
+import { legacyPlaintextToHtml } from '@/lib/legacy-content'
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>
@@ -12,7 +14,7 @@ async function getPost(slug: string) {
   const supabase = await createClient()
   const { data } = await supabase
     .from('blog_posts')
-    .select('title, slug, content, excerpt, cover_image_url, published_at')
+    .select('title, slug, content, content_format, excerpt, cover_image_url, published_at')
     .eq('slug', slug)
     .eq('is_published', true)
     .single()
@@ -107,9 +109,16 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           )}
 
           {/* Content */}
-          <div className="prose prose-lg mx-auto mt-10 max-w-3xl whitespace-pre-line text-gray-600 leading-relaxed">
-            {post.content}
-          </div>
+          <div
+            className="prose prose-lg prose-pink mx-auto mt-10 max-w-3xl"
+            dangerouslySetInnerHTML={{
+              __html: sanitizeHtml(
+                post.content_format === 'plaintext'
+                  ? legacyPlaintextToHtml(post.content)
+                  : post.content
+              ),
+            }}
+          />
 
           {/* Back link bottom */}
           <div className="mt-12 border-t border-gray-200 pt-8 text-center">

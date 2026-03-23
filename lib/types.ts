@@ -76,6 +76,8 @@ export type Database = {
         Row: {
           author_id: string
           content: string
+          content_format: string
+          content_markdown_source: string | null
           cover_image_url: string
           created_at: string
           excerpt: string
@@ -89,6 +91,8 @@ export type Database = {
         Insert: {
           author_id: string
           content: string
+          content_format?: string
+          content_markdown_source?: string | null
           cover_image_url: string
           created_at?: string
           excerpt: string
@@ -102,6 +106,8 @@ export type Database = {
         Update: {
           author_id?: string
           content?: string
+          content_format?: string
+          content_markdown_source?: string | null
           cover_image_url?: string
           created_at?: string
           excerpt?: string
@@ -474,6 +480,42 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      gallery_photos: {
+        Row: {
+          alt_text: string
+          category: string
+          created_at: string
+          id: string
+          image_url: string
+          is_visible: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alt_text?: string
+          category?: string
+          created_at?: string
+          id?: string
+          image_url: string
+          is_visible?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          alt_text?: string
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_visible?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
