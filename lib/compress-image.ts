@@ -41,7 +41,7 @@ export async function compressImage(
   for (let attempt = 0; attempt < 5; attempt++) {
     const blob = await canvas.convertToBlob({ type: 'image/webp', quality })
     if (blob.size <= maxBytes || quality <= 0.3) {
-      const name = file.name.replace(/\.[^/.]+$/, '.webp')
+      const name = file.name.replace(/\.[^/.]+$/, '') + '.webp'
       return new File([blob], name, { type: 'image/webp' })
     }
     quality -= 0.15
@@ -49,6 +49,6 @@ export async function compressImage(
 
   // Final fallback at minimum quality
   const blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.2 })
-  const name = file.name.replace(/\.[^/.]+$/, '.webp')
+  const name = file.name.replace(/\.[^/.]+$/, '') + '.webp'
   return new File([blob], name, { type: 'image/webp' })
 }
