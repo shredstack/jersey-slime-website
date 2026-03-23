@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { slugify } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { compressImage } from '@/lib/compress-image'
+import ContentEditor from '@/components/admin/ContentEditor'
 
 type BlogPostFormProps = {
   mode: 'create' | 'edit'
@@ -13,6 +15,8 @@ type BlogPostFormProps = {
     slug: string
     excerpt: string
     content: string
+    content_format?: string
+    content_markdown_source?: string | null
     cover_image_url: string
     is_published: boolean
   }
@@ -26,9 +30,12 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
   const [content, setContent] = useState(defaultValues?.content ?? '')
   const [coverImageUrl, setCoverImageUrl] = useState(defaultValues?.cover_image_url ?? '')
   const [isPublished, setIsPublished] = useState(defaultValues?.is_published ?? false)
+  const [contentFormat, setContentFormat] = useState(defaultValues?.content_format ?? 'html')
+  const [markdownSource, setMarkdownSource] = useState<string | null>(defaultValues?.content_markdown_source ?? null)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === 'edit')
 
   const [uploading, setUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,22 +56,27 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5MB')
-      return
-    }
-
     setError(null)
     setUploading(true)
 
     try {
+      let fileToUpload = file
+
+      if (file.size > 4.5 * 1024 * 1024) {
+        setUploadStatus(`Compressing image (${(file.size / 1024 / 1024).toFixed(1)}MB)…`)
+        fileToUpload = await compressImage(file)
+        setUploadStatus('Uploading…')
+      } else {
+        setUploadStatus('Uploading…')
+      }
+
       const supabase = createClient()
-      const ext = file.name.split('.').pop()
+      const ext = fileToUpload.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('blog-images')
-        .upload(fileName, file, { cacheControl: '31536000', upsert: false })
+        .upload(fileName, fileToUpload, { cacheControl: '31536000', upsert: false })
 
       if (uploadError) {
         setError(`Upload failed: ${uploadError.message}`)
@@ -76,12 +88,38 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
         .getPublicUrl(fileName)
 
       setCoverImageUrl(urlData.publicUrl)
-    } catch {
-      setError('Upload failed. Please try again.')
+    } catch (err) {
+      setError(err instanceof Error ? `Upload failed: ${err.message}` : 'Upload failed. Please try again.')
     } finally {
       setUploading(false)
+      setUploadStatus(null)
     }
   }
+
+  const handleInlineImageUpload = useCallback(async (file: File): Promise<string> => {
+    if (!file.type.startsWith('image/')) throw new Error('Please select an image file (JPG, PNG, WebP, etc.)')
+
+    let fileToUpload = file
+    if (file.size > 4.5 * 1024 * 1024) {
+      fileToUpload = await compressImage(file)
+    }
+
+    const supabase = createClient()
+    const ext = fileToUpload.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('blog-images')
+      .upload(fileName, fileToUpload, { cacheControl: '31536000', upsert: false })
+
+    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
+
+    const { data: urlData } = supabase.storage
+      .from('blog-images')
+      .getPublicUrl(fileName)
+
+    return urlData.publicUrl
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -100,6 +138,8 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
           slug,
           excerpt,
           content,
+          content_format: markdownSource ? 'markdown' : 'html',
+          content_markdown_source: markdownSource,
           cover_image_url: coverImageUrl,
           is_published: isPublished,
         }),
@@ -227,14 +267,20 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
             className="flex flex-col items-center justify-center w-full max-w-md h-40 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-brand-purple hover:bg-gray-100 transition-colors"
           >
             {uploading ? (
-              <p className="text-sm text-gray-500">Uploading...</p>
+              <div className="text-center">
+                <svg className="w-6 h-6 text-brand-purple animate-spin mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <p className="text-sm text-gray-500">{uploadStatus ?? 'Uploading…'}</p>
+              </div>
             ) : (
               <>
                 <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
                 </svg>
                 <p className="text-sm text-gray-500">Click to upload an image</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP up to 5MB</p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP — large images auto-compressed</p>
               </>
             )}
           </div>
@@ -251,17 +297,23 @@ export default function BlogPostForm({ mode, postId, defaultValues }: BlogPostFo
 
       {/* Content */}
       <div>
-        <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           Content <span className="text-red-500">*</span>
         </label>
-        <textarea
-          id="content"
+        <ContentEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-          rows={20}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
-          placeholder="Write your blog post content here…"
+          onChange={setContent}
+          markdownSource={markdownSource}
+          onMarkdownSourceChange={setMarkdownSource}
+          initialMode={
+            defaultValues?.content_format === 'markdown'
+              ? 'markdown'
+              : defaultValues?.content_format === 'plaintext'
+                ? 'html'
+                : 'visual'
+          }
+          onImageUpload={handleInlineImageUpload}
+          placeholder="Start writing your blog post..."
         />
       </div>
 

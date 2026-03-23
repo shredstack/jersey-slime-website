@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getStudioContactEmail } from '@/lib/email'
 
 const DURATION_LABELS: Record<number, string> = {
   60: '60 minutes (1 hour)',
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
-      to: [STUDIO_CONTACT_EMAIL],
+      to: [await getStudioContactEmail()],
       replyTo: email,
       subject: `New Party Inquiry from ${name}`,
       text: [

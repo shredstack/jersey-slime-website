@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { compressImage } from '@/lib/compress-image'
 
 interface SlimeItem {
   id: string
@@ -79,22 +80,18 @@ export default function InventoryManager({ initialInventory }: { initialInventor
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5MB')
-      return
-    }
-
     setError(null)
     setUploading(true)
 
     try {
+      const processed = file.size > 5 * 1024 * 1024 ? await compressImage(file) : file
       const supabase = createClient()
-      const ext = file.name.split('.').pop()
+      const ext = processed.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('slime-images')
-        .upload(fileName, file, { cacheControl: '31536000', upsert: false })
+        .upload(fileName, processed, { cacheControl: '31536000', upsert: false })
 
       if (uploadError) {
         setError(`Upload failed: ${uploadError.message}`)

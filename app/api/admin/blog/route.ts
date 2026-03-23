@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 const createPostSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -9,6 +10,8 @@ const createPostSchema = z.object({
     .min(1, 'Slug is required')
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   content: z.string().min(1, 'Content is required'),
+  content_format: z.enum(['html', 'markdown', 'plaintext']).default('html'),
+  content_markdown_source: z.string().nullable().optional(),
   excerpt: z.string().min(1, 'Excerpt is required'),
   cover_image_url: z.string().optional().default(''),
   is_published: z.boolean().default(false),
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { title, slug, content, excerpt, cover_image_url, is_published } = parsed.data
+  const { title, slug, content, content_format, content_markdown_source, excerpt, cover_image_url, is_published } = parsed.data
 
   const service = createServiceClient()
   const { data: post, error } = await service
@@ -54,7 +57,9 @@ export async function POST(request: Request) {
     .insert({
       title,
       slug,
-      content,
+      content: sanitizeHtml(content),
+      content_format,
+      content_markdown_source: content_markdown_source ?? null,
       excerpt,
       cover_image_url,
       author_id: user.id,

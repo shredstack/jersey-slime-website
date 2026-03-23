@@ -4,6 +4,13 @@ import type { Database } from '@/lib/types'
 
 const COOKIE_PREFIX = 'jersey-slime'
 
+const COOKIE_DEFAULTS = {
+  path: '/',
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+  maxAge: 400 * 24 * 60 * 60,
+}
+
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -18,7 +25,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...COOKIE_DEFAULTS, ...options })
             )
           } catch {
             // The `setAll` method is called from a Server Component.

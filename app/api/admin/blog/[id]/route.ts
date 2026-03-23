@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { sanitizeHtml } from '@/lib/sanitize'
 
 const updatePostSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
@@ -10,6 +11,8 @@ const updatePostSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only')
     .optional(),
   content: z.string().min(1, 'Content is required').optional(),
+  content_format: z.enum(['html', 'markdown', 'plaintext']).optional(),
+  content_markdown_source: z.string().nullable().optional(),
   excerpt: z.string().min(1, 'Excerpt is required').optional(),
   cover_image_url: z.string().optional(),
   is_published: z.boolean().optional(),
@@ -49,6 +52,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const updates: Record<string, unknown> = { ...parsed.data }
+
+  // Sanitize content if provided
+  if (typeof updates.content === 'string') {
+    updates.content = sanitizeHtml(updates.content as string)
+  }
 
   // Set published_at when publishing for the first time
   if (parsed.data.is_published === true) {
