@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify'
+import sanitize from 'sanitize-html'
 
 const ALLOWED_TAGS = [
   'p', 'h2', 'h3', 'h4', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'del',
@@ -7,18 +7,17 @@ const ALLOWED_TAGS = [
   'tbody', 'tr', 'th', 'td', 'sup', 'sub',
 ]
 
-const ALLOWED_ATTR = [
-  'href', 'target', 'rel', 'title',       // links
-  'src', 'alt', 'width', 'height', 'loading', // images
-  'class',                                  // styling
-  'colspan', 'rowspan',                     // tables
-]
+const ALLOWED_ATTR: Record<string, string[]> = {
+  a: ['href', 'target', 'rel', 'title'],
+  img: ['src', 'alt', 'width', 'height', 'loading'],
+  '*': ['class'],
+  td: ['colspan', 'rowspan'],
+  th: ['colspan', 'rowspan'],
+}
 
 export function sanitizeHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ['target'],
+  return sanitize(dirty, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: ALLOWED_ATTR,
   })
 }
