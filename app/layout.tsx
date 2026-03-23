@@ -3,6 +3,7 @@ import { Inter, Fredoka } from 'next/font/google'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import LayoutShell from '@/components/layout/LayoutShell'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 import './globals.css'
 
 const inter = Inter({
@@ -91,6 +92,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${fredoka.variable}`}>
+      <GoogleAnalytics />
       <body className="font-sans">
         <script
           type="application/ld+json"
