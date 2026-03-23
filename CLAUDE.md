@@ -55,7 +55,7 @@ Required env vars are documented in `.env.local.example`:
 - `SUPABASE_SERVICE_ROLE_KEY` — server-side only, for admin operations
 - `NEXT_PUBLIC_SITE_URL` — used for sitemap generation and absolute URLs
 - `RESEND_API_KEY` — email sending
-- `GOOGLE_ANALYTICS_ID` — analytics tracking
+- `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` — analytics tracking
 
 ## PR Reviews
 
