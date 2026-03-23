@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
-import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getStudioContactEmail } from '@/lib/email'
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     await resend.emails.send({
       from: 'Jersey Slime Studio 38 <noreply@jerseyslimestudio.com>',
-      to: [STUDIO_CONTACT_EMAIL],
+      to: [await getStudioContactEmail()],
       replyTo: email,
       subject: `Contact Form: ${subject}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,

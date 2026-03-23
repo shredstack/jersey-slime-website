@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getStudioContactEmail } from '@/lib/email'
 import { getAvailableSlots } from '@/lib/availability'
 import { formatTime } from '@/lib/utils'
 
@@ -116,7 +116,7 @@ export async function PATCH(
           await resend.emails.send({
             from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
             to: [customerProfile.email],
-            replyTo: STUDIO_CONTACT_EMAIL,
+            replyTo: await getStudioContactEmail(),
             subject: 'Your Booking Has Been Cancelled — Jersey Slime Studio',
             text: [
               `Hi ${customerProfile.full_name},`,

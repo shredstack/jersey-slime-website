@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getAvailableSlots } from '@/lib/availability'
+import { getStudioContactEmail, EMAIL_FROM, getAdminEmails } from '@/lib/email'
+import { formatDate, formatTime, formatPrice } from '@/lib/utils'
 
 const bookingSchema = z.object({
   experience_id: z.string().uuid('Invalid experience ID'),
@@ -94,6 +97,80 @@ export async function POST(request: Request) {
     if (bookingError) {
       console.error('Booking insert error:', bookingError)
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
+    }
+
+    // Send email notifications (non-blocking — don't fail the booking if emails fail)
+    try {
+      const service = createServiceClient()
+      const resend = new Resend(process.env.RESEND_API_KEY)
+
+      // Fetch customer profile and experience title in parallel
+      const [customerResult, experienceResult, adminEmails, studioContactEmail] = await Promise.all([
+        service.from('profiles').select('email, full_name').eq('id', user.id).single(),
+        supabase.from('experiences').select('title').eq('id', experience_id).single(),
+        getAdminEmails(),
+        getStudioContactEmail(),
+      ])
+
+      const customerEmail = customerResult.data?.email
+      const customerName = customerResult.data?.full_name || 'Guest'
+      const experienceName = experienceResult.data?.title || 'Slime Experience'
+      const formattedDate = formatDate(date)
+      const formattedTime = `${formatTime(start_time)} – ${formatTime(end_time)}`
+      const formattedPrice = formatPrice(total_price)
+
+      // Send confirmation email to the customer
+      if (customerEmail) {
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: [customerEmail],
+          replyTo: studioContactEmail,
+          subject: 'Booking Received! — Jersey Slime Studio',
+          text: [
+            `Hi ${customerName},`,
+            '',
+            "Thanks for booking with Jersey Slime Studio! We've received your reservation and it's pending confirmation.",
+            '',
+            `Experience: ${experienceName}`,
+            `Date: ${formattedDate}`,
+            `Time: ${formattedTime}`,
+            `Guests: ${guest_count}`,
+            `Estimated Total: ${formattedPrice}`,
+            ...(notes ? [`Notes: ${notes}`] : []),
+            '',
+            "We'll send you another email once your booking is confirmed. If you have any questions, just reply to this email.",
+            '',
+            '— Jersey Slime Studio',
+          ].join('\n'),
+        })
+      }
+
+      // Send notification email to all admin users
+      if (adminEmails.length > 0) {
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: adminEmails,
+          replyTo: customerEmail || studioContactEmail,
+          subject: `New Booking from ${customerName} — Jersey Slime Studio`,
+          text: [
+            `A new booking has been submitted and is pending confirmation.`,
+            '',
+            `Customer: ${customerName}${customerEmail ? ` (${customerEmail})` : ''}`,
+            `Experience: ${experienceName}`,
+            `Date: ${formattedDate}`,
+            `Time: ${formattedTime}`,
+            `Guests: ${guest_count}`,
+            `Estimated Total: ${formattedPrice}`,
+            ...(notes ? [`Notes: ${notes}`] : []),
+            '',
+            'Log in to the admin dashboard to confirm or manage this booking.',
+            '',
+            '— Jersey Slime Studio',
+          ].join('\n'),
+        })
+      }
+    } catch (emailErr) {
+      console.error('Booking notification email error:', emailErr)
     }
 
     return NextResponse.json({ booking }, { status: 201 })

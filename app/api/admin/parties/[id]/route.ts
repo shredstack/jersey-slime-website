@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getStudioContactEmail } from '@/lib/email'
 
 const updateSchema = z.object({
   status: z.enum(['new', 'contacted', 'confirmed', 'completed', 'cancelled']).optional(),
@@ -117,7 +117,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await resend.emails.send({
           from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
           to: [inquiry.contact_email],
-          replyTo: STUDIO_CONTACT_EMAIL,
+          replyTo: await getStudioContactEmail(),
           subject,
           text: bodyLines.join('\n'),
         })

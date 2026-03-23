@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { STUDIO_CONTACT_EMAIL } from '@/lib/email'
+import { getStudioContactEmail } from '@/lib/email'
 
 const cancelSchema = z.object({
   action: z.literal('cancel'),
@@ -81,7 +81,7 @@ export async function PATCH(
         await resend.emails.send({
           from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
           to: [inquiry.contact_email],
-          replyTo: STUDIO_CONTACT_EMAIL,
+          replyTo: await getStudioContactEmail(),
           subject: 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio',
           text: [
             `Hi ${inquiry.contact_name},`,
