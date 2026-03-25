@@ -203,6 +203,15 @@ function LoginContent() {
           </svg>
           Continue with Google
         </button>
+        <p className="text-xs text-center text-gray-400">
+          Google sign-in is securely handled by{' '}
+          <a href="https://supabase.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500">
+            Supabase
+          </a>
+          , our backend database provider. You may see{' '}
+          <span className="font-mono text-gray-500">qarlinvalydxyjecrdem.supabase.co</span>{' '}
+          during sign-in — this is our private Supabase project and is expected.
+        </p>
 
         {/* Divider */}
         <div className="relative">
