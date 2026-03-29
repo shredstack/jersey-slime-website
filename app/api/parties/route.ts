@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM, getAdminEmails } from '@/lib/email'
 import { partyInquiryCustomer, partyInquiryAdmin } from '@/lib/email-templates'
 import { formatTime } from '@/lib/utils'
 
@@ -88,7 +88,10 @@ export async function POST(request: Request) {
     // Send email notifications (non-blocking — don't fail the inquiry if emails fail)
     try {
       const resend = new Resend(process.env.RESEND_API_KEY)
-      const studioEmail = await getStudioContactEmail()
+      const [studioEmail, adminEmails] = await Promise.all([
+        getStudioContactEmail(),
+        getAdminEmails(),
+      ])
       const durationLabel = DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`
       const formattedTime = formatTime(preferredTime)
 
@@ -114,10 +117,11 @@ export async function POST(request: Request) {
         console.error('Resend error (party inquiry customer):', customerEmailError)
       }
 
-      // Send notification email to the studio
+      // Send notification email to all admin users
+      const adminRecipients = adminEmails.length > 0 ? adminEmails : [studioEmail]
       const { error: adminEmailError } = await resend.emails.send({
         from: EMAIL_FROM,
-        to: [studioEmail],
+        to: adminRecipients,
         replyTo: email,
         subject: `New Party Inquiry from ${name} — Jersey Slime Studio 38`,
         html: partyInquiryAdmin(name, email, phone, partyDetails),
