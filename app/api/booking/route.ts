@@ -121,7 +121,7 @@ export async function POST(request: Request) {
 
       // Send confirmation email to the customer
       if (customerEmail) {
-        await resend.emails.send({
+        const { error: emailError } = await resend.emails.send({
           from: EMAIL_FROM,
           to: [customerEmail],
           replyTo: studioContactEmail,
@@ -143,11 +143,16 @@ export async function POST(request: Request) {
             '— Jersey Slime Studio',
           ].join('\n'),
         })
+        if (emailError) {
+          console.error('Resend error (booking customer):', emailError)
+        }
+      } else {
+        console.warn('Booking confirmation email skipped: no customer email found')
       }
 
       // Send notification email to all admin users
       if (adminEmails.length > 0) {
-        await resend.emails.send({
+        const { error: adminEmailError } = await resend.emails.send({
           from: EMAIL_FROM,
           to: adminEmails,
           replyTo: customerEmail || studioContactEmail,
@@ -168,6 +173,11 @@ export async function POST(request: Request) {
             '— Jersey Slime Studio',
           ].join('\n'),
         })
+        if (adminEmailError) {
+          console.error('Resend error (booking admin):', adminEmailError)
+        }
+      } else {
+        console.warn('Booking admin notification skipped: no admin emails found')
       }
     } catch (emailErr) {
       console.error('Booking notification email error:', emailErr)

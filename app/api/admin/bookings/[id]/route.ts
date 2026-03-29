@@ -118,13 +118,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                 '— Jersey Slime Studio',
               ]
 
-          await resend.emails.send({
+          const { error: emailError } = await resend.emails.send({
             from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
             to: [customerProfile.email],
             replyTo: await getStudioContactEmail(),
             subject,
             text: bodyLines.join('\n'),
           })
+          if (emailError) {
+            console.error('Resend error (booking status):', emailError)
+          }
         }
       }
     } catch (emailErr) {
