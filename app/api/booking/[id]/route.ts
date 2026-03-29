@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
 import { getAvailableSlots } from '@/lib/availability'
 import { formatTime } from '@/lib/utils'
+import { bookingCancelledCustomer } from '@/lib/email-templates'
 
 const cancelSchema = z.object({
   action: z.literal('cancel'),
@@ -114,28 +115,18 @@ export async function PATCH(
         if (customerProfile?.email) {
           const resend = new Resend(process.env.RESEND_API_KEY)
           const { error: emailError } = await resend.emails.send({
-            from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+            from: EMAIL_FROM,
             to: [customerProfile.email],
             replyTo: await getStudioContactEmail(),
-            subject: 'Your Booking Has Been Cancelled — Jersey Slime Studio',
-            text: [
-              `Hi ${customerProfile.full_name},`,
-              '',
-              'Your booking has been cancelled as requested.',
-              '',
-              `Experience: ${experienceName}`,
-              ...(booking.booking_date
-                ? [`Date: ${booking.booking_date}`]
-                : []),
-              ...(booking.start_time && booking.end_time
-                ? [`Time: ${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`]
-                : []),
-              `Guests: ${booking.guest_count}`,
-              '',
-              "If you'd like to rebook or have any questions, please reply to this email.",
-              '',
-              '— Jersey Slime Studio',
-            ].join('\n'),
+            subject: 'Your Booking Has Been Cancelled — Jersey Slime Studio 38',
+            html: bookingCancelledCustomer(customerProfile.full_name, {
+              experienceName,
+              date: booking.booking_date || '',
+              time: booking.start_time && booking.end_time
+                ? `${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`
+                : '',
+              guests: booking.guest_count,
+            }, false),
           })
           if (emailError) {
             console.error('Resend error (booking cancellation):', emailError)

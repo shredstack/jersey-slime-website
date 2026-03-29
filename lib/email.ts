@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 const FALLBACK_CONTACT_EMAIL = 'hello@jerseyslimestudio.com'
 
-export const EMAIL_FROM = 'Jersey Slime Studio <noreply@jerseyslimestudio.com>'
+export const EMAIL_FROM = 'Jersey Slime Studio 38 <noreply@jerseyslimestudio.com>'
 
 /**
  * Fetch the studio contact email from site_settings (set by the admin).

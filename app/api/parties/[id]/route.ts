@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
+import { partyCancelledCustomer } from '@/lib/email-templates'
 
 const cancelSchema = z.object({
   action: z.literal('cancel'),
@@ -79,23 +80,15 @@ export async function PATCH(
       if (inquiry.contact_email) {
         const resend = new Resend(process.env.RESEND_API_KEY)
         const { error: emailError } = await resend.emails.send({
-          from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+          from: EMAIL_FROM,
           to: [inquiry.contact_email],
           replyTo: await getStudioContactEmail(),
-          subject: 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio',
-          text: [
-            `Hi ${inquiry.contact_name},`,
-            '',
-            `Your party inquiry has been cancelled as requested.`,
-            '',
-            `Date: ${inquiry.preferred_date}`,
-            `Guests: ${inquiry.guest_count}`,
-            `Age Range: ${inquiry.age_range}`,
-            '',
-            `If you'd like to rebook or have any questions, please reply to this email.`,
-            '',
-            '— Jersey Slime Studio',
-          ].join('\n'),
+          subject: 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio 38',
+          html: partyCancelledCustomer(inquiry.contact_name, {
+            date: inquiry.preferred_date,
+            guests: inquiry.guest_count,
+            ageRange: inquiry.age_range,
+          }, false),
         })
         if (emailError) {
           console.error('Resend error (party cancellation):', emailError)

@@ -56,8 +56,8 @@ export const metadata: Metadata = {
       'Utah\'s premier hands-on slime making experience studio. Book slime parties, walk-in experiences, and more.',
   },
   icons: {
-    icon: '/jersey-slime-logo.png',
-    apple: '/jersey-slime-logo.png',
+    icon: '/jersey_slime_google_profile_720x720.png',
+    apple: '/jersey_slime_google_profile_720x720.png',
   },
   robots: {
     index: true,

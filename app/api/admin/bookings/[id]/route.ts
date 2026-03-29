@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
 import { formatTime } from '@/lib/utils'
+import { bookingConfirmedCustomer, bookingCancelledCustomer } from '@/lib/email-templates'
 
 const updateSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled']),
@@ -80,50 +81,29 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           const isConfirmed = parsed.data.status === 'confirmed'
 
           const subject = isConfirmed
-            ? 'Your Booking is Confirmed! — Jersey Slime Studio'
-            : 'Your Booking Has Been Cancelled — Jersey Slime Studio'
+            ? 'Your Booking is Confirmed! — Jersey Slime Studio 38'
+            : 'Your Booking Has Been Cancelled — Jersey Slime Studio 38'
 
-          const bodyLines = isConfirmed
-            ? [
-                `Hi ${customerProfile.full_name},`,
-                '',
-                'Great news! Your booking has been confirmed.',
-                '',
-                `Experience: ${experienceName}`,
-                ...(booking.booking_date ? [`Date: ${booking.booking_date}`] : []),
-                ...(booking.start_time && booking.end_time
-                  ? [`Time: ${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`]
-                  : []),
-                `Guests: ${booking.guest_count}`,
-                `Total: $${Number(booking.total_price).toFixed(2)}`,
-                '',
-                "We can't wait to see you! If you have any questions, just reply to this email.",
-                '',
-                '— Jersey Slime Studio',
-              ]
-            : [
-                `Hi ${customerProfile.full_name},`,
-                '',
-                "We're sorry to let you know that your booking has been cancelled.",
-                '',
-                `Experience: ${experienceName}`,
-                ...(booking.booking_date ? [`Date: ${booking.booking_date}`] : []),
-                ...(booking.start_time && booking.end_time
-                  ? [`Time: ${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`]
-                  : []),
-                `Guests: ${booking.guest_count}`,
-                '',
-                'If you have any questions or would like to rebook, please reply to this email.',
-                '',
-                '— Jersey Slime Studio',
-              ]
+          const details = {
+            experienceName,
+            date: booking.booking_date || '',
+            time: booking.start_time && booking.end_time
+              ? `${formatTime(booking.start_time)} – ${formatTime(booking.end_time)}`
+              : '',
+            guests: booking.guest_count,
+            price: booking.total_price ? `$${Number(booking.total_price).toFixed(2)}` : undefined,
+          }
+
+          const html = isConfirmed
+            ? bookingConfirmedCustomer(customerProfile.full_name, details)
+            : bookingCancelledCustomer(customerProfile.full_name, details, true)
 
           const { error: emailError } = await resend.emails.send({
-            from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+            from: EMAIL_FROM,
             to: [customerProfile.email],
             replyTo: await getStudioContactEmail(),
             subject,
-            text: bodyLines.join('\n'),
+            html,
           })
           if (emailError) {
             console.error('Resend error (booking status):', emailError)

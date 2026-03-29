@@ -96,11 +96,11 @@ export default function Header() {
           {/* Logo / Brand */}
           <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src="/jersey-slime-logo.png"
+              src="/jersey_slime_web_logo.png"
               alt="Jersey Slime Studio 38 logo"
-              width={40}
+              width={120}
               height={40}
-              className="rounded-full"
+              className="object-contain"
               priority
             />
             <span className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-400 to-teal-400 bg-clip-text text-transparent font-display tracking-tight">

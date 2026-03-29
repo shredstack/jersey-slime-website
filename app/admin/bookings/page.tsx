@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { createServiceClient } from '@/lib/supabase/server'
-import { formatPrice, formatDate, formatTime } from '@/lib/utils'
-import BookingStatusSelect from './BookingStatusSelect'
+import BookingTableBody from './BookingTableBody'
 
 export const metadata: Metadata = {
   title: 'Manage Bookings',
@@ -37,47 +36,7 @@ export default async function AdminBookingsPage() {
                   <th className="px-6 py-3 font-medium">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {bookings.map((booking) => {
-                  const profile = booking.profile as {
-                    full_name: string
-                    email: string
-                    phone: string | null
-                  } | null
-                  const experience = booking.experience as { title: string } | null
-                  return (
-                    <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-3">
-                        <p className="font-medium text-gray-900">{profile?.full_name ?? '—'}</p>
-                        <p className="text-xs text-gray-500">{profile?.email ?? ''}</p>
-                      </td>
-                      <td className="px-6 py-3 text-gray-700">{experience?.title ?? '—'}</td>
-                      <td className="px-6 py-3 text-gray-700">
-                        {booking.booking_date ? (
-                          <>
-                            <p>{formatDate(booking.booking_date)}</p>
-                            {booking.start_time && booking.end_time && (
-                              <p className="text-xs text-gray-500">
-                                {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-gray-700">{booking.guest_count}</td>
-                      <td className="px-6 py-3 text-gray-700">{formatPrice(booking.total_price)}</td>
-                      <td className="px-6 py-3">
-                        <BookingStatusSelect
-                          bookingId={booking.id}
-                          currentStatus={booking.status as 'pending' | 'confirmed' | 'cancelled'}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
+              <BookingTableBody bookings={bookings as any} />
             </table>
           ) : (
             <p className="px-6 py-8 text-sm text-gray-500 text-center">No bookings yet.</p>
