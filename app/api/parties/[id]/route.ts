@@ -78,7 +78,7 @@ export async function PATCH(
     try {
       if (inquiry.contact_email) {
         const resend = new Resend(process.env.RESEND_API_KEY)
-        await resend.emails.send({
+        const { error: emailError } = await resend.emails.send({
           from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
           to: [inquiry.contact_email],
           replyTo: await getStudioContactEmail(),
@@ -97,6 +97,9 @@ export async function PATCH(
             '— Jersey Slime Studio',
           ].join('\n'),
         })
+        if (emailError) {
+          console.error('Resend error (party cancellation):', emailError)
+        }
       }
     } catch (emailErr) {
       console.error('Party cancellation email error:', emailErr)

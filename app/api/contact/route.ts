@@ -26,13 +26,21 @@ export async function POST(request: Request) {
 
     const resend = new Resend(process.env.RESEND_API_KEY)
 
-    await resend.emails.send({
-      from: 'Jersey Slime Studio 38 <noreply@jerseyslimestudio.com>',
+    const { error: emailError } = await resend.emails.send({
+      from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
       to: [await getStudioContactEmail()],
       replyTo: email,
       subject: `Contact Form: ${subject}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
     })
+
+    if (emailError) {
+      console.error('Resend error (contact form):', emailError)
+      return NextResponse.json(
+        { error: 'Failed to send message. Please try again.' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       { message: 'Thank you for reaching out! We will get back to you soon.' },

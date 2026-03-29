@@ -79,25 +79,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save inquiry' }, { status: 500 })
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails.send({
-      from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
-      to: [await getStudioContactEmail()],
-      replyTo: email,
-      subject: `New Party Inquiry from ${name}`,
-      text: [
-        `Name: ${name}`,
-        `Email: ${email}`,
-        `Phone: ${phone}`,
-        `Preferred Date: ${preferredDate}`,
-        `Preferred Time: ${preferredTime}`,
-        `Duration: ${DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`}`,
-        `Guests: ${guestCount}`,
-        `Age Range: ${ageRange}`,
-        `Package: ${PACKAGE_LABELS[selectedPackage]}`,
-        `\nMessage:\n${message || '(none)'}`,
-      ].join('\n'),
-    })
+    // Send email notification (non-blocking — don't fail the inquiry if email fails)
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      const { error: emailError } = await resend.emails.send({
+        from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+        to: [await getStudioContactEmail()],
+        replyTo: email,
+        subject: `New Party Inquiry from ${name}`,
+        text: [
+          `Name: ${name}`,
+          `Email: ${email}`,
+          `Phone: ${phone}`,
+          `Preferred Date: ${preferredDate}`,
+          `Preferred Time: ${preferredTime}`,
+          `Duration: ${DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`}`,
+          `Guests: ${guestCount}`,
+          `Age Range: ${ageRange}`,
+          `Package: ${PACKAGE_LABELS[selectedPackage]}`,
+          `\nMessage:\n${message || '(none)'}`,
+        ].join('\n'),
+      })
+      if (emailError) {
+        console.error('Resend error (party inquiry):', emailError)
+      }
+    } catch (emailErr) {
+      console.error('Party inquiry email error:', emailErr)
+    }
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (err) {

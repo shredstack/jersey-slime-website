@@ -114,13 +114,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               '— Jersey Slime Studio',
             ]
 
-        await resend.emails.send({
+        const { error: emailError } = await resend.emails.send({
           from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
           to: [inquiry.contact_email],
           replyTo: await getStudioContactEmail(),
           subject,
           text: bodyLines.join('\n'),
         })
+        if (emailError) {
+          console.error('Resend error (party status):', emailError)
+        }
       }
     } catch (emailErr) {
       console.error('Party status email error:', emailErr)
