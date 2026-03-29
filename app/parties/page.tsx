@@ -18,9 +18,12 @@ const GRADIENT_COLORS = [
 ]
 
 function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
   const hours = minutes / 60
   if (hours === Math.floor(hours)) return `${hours} hour${hours > 1 ? 's' : ''}`
-  return `${hours} hours`
+  const wholeHours = Math.floor(hours)
+  const remainingMin = minutes % 60
+  return `${wholeHours} hr ${remainingMin} min`
 }
 
 export default async function PartiesPage() {
