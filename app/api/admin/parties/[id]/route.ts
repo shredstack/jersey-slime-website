@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
+import { partyConfirmedCustomer, partyCancelledCustomer } from '@/lib/email-templates'
 
 const updateSchema = z.object({
   status: z.enum(['new', 'contacted', 'confirmed', 'completed', 'cancelled']).optional(),
@@ -80,46 +81,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const resend = new Resend(process.env.RESEND_API_KEY)
 
         const subject = isNewConfirmation
-          ? 'Your Party is Confirmed! — Jersey Slime Studio'
-          : 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio'
+          ? 'Your Party is Confirmed! — Jersey Slime Studio 38'
+          : 'Your Party Inquiry Has Been Cancelled — Jersey Slime Studio 38'
 
-        const bodyLines = isNewConfirmation
-          ? [
-              `Hi ${inquiry.contact_name},`,
-              '',
-              `Great news! Your party experience has been confirmed.`,
-              '',
-              `Date: ${inquiry.preferred_date}`,
-              `Guests: ${inquiry.guest_count}`,
-              `Age Range: ${inquiry.age_range}`,
-              ...(inquiry.total_cost
-                ? [`Total Cost: $${Number(inquiry.total_cost).toFixed(2)}`]
-                : []),
-              '',
-              `We can't wait to celebrate with you! If you have any questions, just reply to this email.`,
-              '',
-              '— Jersey Slime Studio',
-            ]
-          : [
-              `Hi ${inquiry.contact_name},`,
-              '',
-              `We're sorry to let you know that your party inquiry has been cancelled.`,
-              '',
-              `Date: ${inquiry.preferred_date}`,
-              `Guests: ${inquiry.guest_count}`,
-              `Age Range: ${inquiry.age_range}`,
-              '',
-              `If you have any questions or would like to rebook, please reply to this email.`,
-              '',
-              '— Jersey Slime Studio',
-            ]
+        const partyDetails = {
+          date: inquiry.preferred_date,
+          guests: inquiry.guest_count,
+          ageRange: inquiry.age_range,
+          totalCost: inquiry.total_cost
+            ? `$${Number(inquiry.total_cost).toFixed(2)}`
+            : undefined,
+        }
+
+        const html = isNewConfirmation
+          ? partyConfirmedCustomer(inquiry.contact_name, partyDetails)
+          : partyCancelledCustomer(inquiry.contact_name, partyDetails, true)
 
         const { error: emailError } = await resend.emails.send({
-          from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+          from: EMAIL_FROM,
           to: [inquiry.contact_email],
           replyTo: await getStudioContactEmail(),
           subject,
-          text: bodyLines.join('\n'),
+          html,
         })
         if (emailError) {
           console.error('Resend error (party status):', emailError)

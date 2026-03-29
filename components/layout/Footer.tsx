@@ -41,11 +41,11 @@ export default async function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2">
               <Image
-                src="/jersey-slime-logo.png"
+                src="/jersey_slime_web_logo.png"
                 alt="Jersey Slime Studio 38 logo"
-                width={36}
+                width={108}
                 height={36}
-                className="rounded-full"
+                className="object-contain"
               />
               <span className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-400 to-teal-400 bg-clip-text text-transparent font-display tracking-tight">
                 Jersey Slime Studio 38

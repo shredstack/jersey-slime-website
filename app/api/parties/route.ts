@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
+import { partyInquiryCustomer, partyInquiryAdmin } from '@/lib/email-templates'
+import { formatTime } from '@/lib/utils'
 
 const DURATION_LABELS: Record<number, string> = {
   60: '60 minutes (1 hour)',
@@ -21,15 +23,9 @@ const inquirySchema = z.object({
   durationMinutes: z.coerce.number().int().refine((v) => [60, 90, 120].includes(v), {
     message: 'Duration must be 60, 90, or 120 minutes',
   }),
-  selectedPackage: z.enum(['basic', 'deluxe', 'ultimate']),
+  selectedPackage: z.string().min(1, 'Package selection is required'),
   message: z.string().default(''),
 })
-
-const PACKAGE_LABELS: Record<string, string> = {
-  basic: 'Basic — $199',
-  deluxe: 'Deluxe — $299',
-  ultimate: 'Ultimate — $399',
-}
 
 export async function POST(request: Request) {
   try {
@@ -61,6 +57,16 @@ export async function POST(request: Request) {
     const { data: { user } } = await sessionClient.auth.getUser()
 
     const service = createServiceClient()
+
+    // Look up the selected package from the database
+    const { data: pkg } = await service
+      .from('party_packages')
+      .select('name, price')
+      .ilike('name', selectedPackage)
+      .single()
+
+    const packageLabel = pkg ? `${pkg.name} — $${pkg.price}` : selectedPackage
+
     const { error: dbError } = await service.from('party_inquiries').insert({
       contact_name: name,
       contact_email: email,
@@ -70,7 +76,7 @@ export async function POST(request: Request) {
       guest_count: guestCount,
       age_range: ageRange,
       duration_minutes: durationMinutes,
-      message: message || `Package: ${PACKAGE_LABELS[selectedPackage]}`,
+      message: message || `Package: ${packageLabel}`,
       ...(user ? { user_id: user.id } : {}),
     })
 
@@ -79,29 +85,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save inquiry' }, { status: 500 })
     }
 
-    // Send email notification (non-blocking — don't fail the inquiry if email fails)
+    // Send email notifications (non-blocking — don't fail the inquiry if emails fail)
     try {
       const resend = new Resend(process.env.RESEND_API_KEY)
-      const { error: emailError } = await resend.emails.send({
-        from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
-        to: [await getStudioContactEmail()],
-        replyTo: email,
-        subject: `New Party Inquiry from ${name}`,
-        text: [
-          `Name: ${name}`,
-          `Email: ${email}`,
-          `Phone: ${phone}`,
-          `Preferred Date: ${preferredDate}`,
-          `Preferred Time: ${preferredTime}`,
-          `Duration: ${DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`}`,
-          `Guests: ${guestCount}`,
-          `Age Range: ${ageRange}`,
-          `Package: ${PACKAGE_LABELS[selectedPackage]}`,
-          `\nMessage:\n${message || '(none)'}`,
-        ].join('\n'),
+      const studioEmail = await getStudioContactEmail()
+      const durationLabel = DURATION_LABELS[durationMinutes] ?? `${durationMinutes} minutes`
+      const formattedTime = formatTime(preferredTime)
+
+      const partyDetails = {
+        date: preferredDate,
+        time: formattedTime,
+        guests: guestCount,
+        ageRange,
+        duration: durationLabel,
+        packageName: packageLabel,
+        message: message || undefined,
+      }
+
+      // Send confirmation email to the customer
+      const { error: customerEmailError } = await resend.emails.send({
+        from: EMAIL_FROM,
+        to: [email],
+        replyTo: studioEmail,
+        subject: 'Party Inquiry Received! — Jersey Slime Studio 38',
+        html: partyInquiryCustomer(name, partyDetails),
       })
-      if (emailError) {
-        console.error('Resend error (party inquiry):', emailError)
+      if (customerEmailError) {
+        console.error('Resend error (party inquiry customer):', customerEmailError)
+      }
+
+      // Send notification email to the studio
+      const { error: adminEmailError } = await resend.emails.send({
+        from: EMAIL_FROM,
+        to: [studioEmail],
+        replyTo: email,
+        subject: `New Party Inquiry from ${name} — Jersey Slime Studio 38`,
+        html: partyInquiryAdmin(name, email, phone, partyDetails),
+      })
+      if (adminEmailError) {
+        console.error('Resend error (party inquiry admin):', adminEmailError)
       }
     } catch (emailErr) {
       console.error('Party inquiry email error:', emailErr)

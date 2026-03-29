@@ -5,6 +5,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getAvailableSlots } from '@/lib/availability'
 import { getStudioContactEmail, EMAIL_FROM, getAdminEmails } from '@/lib/email'
 import { formatDate, formatTime, formatPrice } from '@/lib/utils'
+import { bookingReceivedCustomer, bookingReceivedAdmin } from '@/lib/email-templates'
 
 const bookingSchema = z.object({
   experience_id: z.string().uuid('Invalid experience ID'),
@@ -119,29 +120,23 @@ export async function POST(request: Request) {
       const formattedTime = `${formatTime(start_time)} – ${formatTime(end_time)}`
       const formattedPrice = formatPrice(total_price)
 
+      const bookingDetails = {
+        experienceName,
+        date: formattedDate,
+        time: formattedTime,
+        guests: guest_count,
+        price: formattedPrice,
+        notes: notes || undefined,
+      }
+
       // Send confirmation email to the customer
       if (customerEmail) {
         const { error: emailError } = await resend.emails.send({
           from: EMAIL_FROM,
           to: [customerEmail],
           replyTo: studioContactEmail,
-          subject: 'Booking Received! — Jersey Slime Studio',
-          text: [
-            `Hi ${customerName},`,
-            '',
-            "Thanks for booking with Jersey Slime Studio! We've received your reservation and it's pending confirmation.",
-            '',
-            `Experience: ${experienceName}`,
-            `Date: ${formattedDate}`,
-            `Time: ${formattedTime}`,
-            `Guests: ${guest_count}`,
-            `Estimated Total: ${formattedPrice}`,
-            ...(notes ? [`Notes: ${notes}`] : []),
-            '',
-            "We'll send you another email once your booking is confirmed. If you have any questions, just reply to this email.",
-            '',
-            '— Jersey Slime Studio',
-          ].join('\n'),
+          subject: 'Booking Received! — Jersey Slime Studio 38',
+          html: bookingReceivedCustomer(customerName, bookingDetails),
         })
         if (emailError) {
           console.error('Resend error (booking customer):', emailError)
@@ -156,22 +151,8 @@ export async function POST(request: Request) {
           from: EMAIL_FROM,
           to: adminEmails,
           replyTo: customerEmail || studioContactEmail,
-          subject: `New Booking from ${customerName} — Jersey Slime Studio`,
-          text: [
-            `A new booking has been submitted and is pending confirmation.`,
-            '',
-            `Customer: ${customerName}${customerEmail ? ` (${customerEmail})` : ''}`,
-            `Experience: ${experienceName}`,
-            `Date: ${formattedDate}`,
-            `Time: ${formattedTime}`,
-            `Guests: ${guest_count}`,
-            `Estimated Total: ${formattedPrice}`,
-            ...(notes ? [`Notes: ${notes}`] : []),
-            '',
-            'Log in to the admin dashboard to confirm or manage this booking.',
-            '',
-            '— Jersey Slime Studio',
-          ].join('\n'),
+          subject: `New Booking from ${customerName} — Jersey Slime Studio 38`,
+          html: bookingReceivedAdmin(customerName, customerEmail, bookingDetails),
         })
         if (adminEmailError) {
           console.error('Resend error (booking admin):', adminEmailError)

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
-import { getStudioContactEmail } from '@/lib/email'
+import { getStudioContactEmail, EMAIL_FROM } from '@/lib/email'
+import { contactFormAdmin } from '@/lib/email-templates'
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -27,11 +28,11 @@ export async function POST(request: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     const { error: emailError } = await resend.emails.send({
-      from: 'Jersey Slime Studio <noreply@jerseyslimestudio.com>',
+      from: EMAIL_FROM,
       to: [await getStudioContactEmail()],
       replyTo: email,
       subject: `Contact Form: ${subject}`,
-      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
+      html: contactFormAdmin(name, email, subject, message),
     })
 
     if (emailError) {
