@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { createServiceClient } from '@/lib/supabase/server'
-import PartyTableBody from './PartyTableBody'
+import PartiesManager from './PartiesManager'
 
 export const metadata: Metadata = {
   title: 'Party Inquiries',
@@ -21,30 +21,7 @@ export default async function AdminPartiesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Party Inquiries</h1>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          {inquiries && inquiries.length > 0 ? (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left text-gray-500">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Contact</th>
-                  <th className="px-6 py-3 font-medium">Package</th>
-                  <th className="px-6 py-3 font-medium">Preferred Date/Time</th>
-                  <th className="px-6 py-3 font-medium">Duration</th>
-                  <th className="px-6 py-3 font-medium">Guests</th>
-                  <th className="px-6 py-3 font-medium">Ages</th>
-                  <th className="px-6 py-3 font-medium">Total Cost</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                </tr>
-              </thead>
-              <PartyTableBody inquiries={inquiries as any} />
-            </table>
-          ) : (
-            <p className="px-6 py-8 text-sm text-gray-500 text-center">No party inquiries yet.</p>
-          )}
-        </div>
-      </div>
+      <PartiesManager inquiries={(inquiries as any) ?? []} />
     </div>
   )
 }
