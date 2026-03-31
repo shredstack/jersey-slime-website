@@ -149,14 +149,18 @@ export function bookingConfirmedCustomer(name: string, details: BookingDetails):
     ['Guests', String(details.guests)],
   ]
   if (details.price) rows.push(['Total', details.price])
+  rows.push(['Location', 'The Shops at South Town — bottom floor, south end'])
 
   return layout([
     heading("You're All Set! ✨"),
     paragraph(`Hi ${name},`),
-    paragraph("Great news — your booking has been confirmed! We can't wait to see you and get slimy together."),
+    paragraph(`Thank you for booking your reservation with Jersey Slime Studio 38, located at The Shops at South Town. Your slime experience is officially confirmed!`),
+    paragraph(`We look forward to welcoming you as our guest while you create your own custom slime kit inspired by the magic of the Northern Lights. During your visit, you'll choose your favorite slime textures, charms, and mix-ins to design a one-of-a-kind slime creation.`),
+    paragraph(`Our goal is to make your visit a fun and memorable experience filled with creativity, color, and a little bit of slime magic.`),
     detailsTable(rows),
-    paragraph("If you have any questions, just reply to this email."),
-    signoff(),
+    paragraph("If you have any questions before your visit, please feel free to reply to this email or contact us at 801-718-3530."),
+    paragraph("We can't wait to see what slime you create!"),
+    `<p style="margin:20px 0 0;font-size:14px;color:${BRAND.muted};line-height:1.5;">Warmly,<br/><strong style="color:${BRAND.dark};">Jersey Slime Studio 38</strong></p>`,
   ].join(''))
 }
 
