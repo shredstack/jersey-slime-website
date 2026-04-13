@@ -178,6 +178,7 @@ export default function PartyInquiryForm({
               name="preferredDate"
               value={formData.preferredDate}
               onChange={handleChange}
+              min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
               className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-brand-purple focus:outline-none focus:ring-2 focus:ring-brand-purple/30"
               required
             />

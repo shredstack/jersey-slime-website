@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Jersey Slime Studio 38 | Utah\'s Premier Slime-Making Experience',
+  title: 'Jersey Slime Studio 38 | Utah\'s Premier Slime Experience',
   description:
-    'Welcome to Jersey Slime Studio 38! Create your own custom slime, book birthday parties, and shop our handmade slime collection in Utah.',
+    'Welcome to Jersey Slime Studio 38! Customize your own slime kit with fun mix-ins and charms, book birthday parties, and shop our handmade slime collection in Utah.',
   openGraph: {
-    title: 'Jersey Slime Studio 38 | Utah\'s Premier Slime-Making Experience',
+    title: 'Jersey Slime Studio 38 | Utah\'s Premier Slime Experience',
     description:
-      'Welcome to Jersey Slime Studio 38! Create your own custom slime, book birthday parties, and shop our handmade slime collection in Utah.',
+      'Welcome to Jersey Slime Studio 38! Customize your own slime kit with fun mix-ins and charms, book birthday parties, and shop our handmade slime collection in Utah.',
     type: 'website',
   },
 }
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 const valueProps = [
   {
     emoji: '🎨',
-    title: 'Create Your Own Slime',
+    title: 'Customize Your Slime Kit',
     description:
-      'Choose your colors, scents, and mix-ins to craft a one-of-a-kind slime masterpiece.',
+      'Pick your colors, scents, mix-ins, and charms to build a one-of-a-kind slime creation.',
   },
   {
     emoji: '🎉',
@@ -42,7 +42,7 @@ const testimonials = [
   },
   {
     name: 'Jake T.',
-    text: 'Such a fun experience for the whole family. We come back every month to try new slime recipes. Absolutely love this place!',
+    text: 'Such a fun experience for the whole family. We come back every month to try new slime combos. Absolutely love this place!',
     rating: 5,
   },
   {
@@ -64,9 +64,9 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-white/90 sm:text-xl">
-            Utah&rsquo;s most colorful slime-making experience! Stretch your
-            creativity, squish your stress away, and take home something truly
-            unique.
+            Utah&rsquo;s most colorful slime experience! Customize your own
+            slime kit with fun mix-ins and charms, then take home something
+            truly unique.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link

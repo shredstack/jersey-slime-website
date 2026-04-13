@@ -52,6 +52,17 @@ export async function POST(request: Request) {
       message,
     } = parsed.data
 
+    // Enforce 24-hour advance booking requirement
+    const [ph, pm] = preferredTime.split(':').map(Number)
+    const partyDate = new Date(`${preferredDate}T${String(ph).padStart(2, '0')}:${String(pm).padStart(2, '0')}:00`)
+    const hoursUntilParty = (partyDate.getTime() - Date.now()) / (1000 * 60 * 60)
+    if (hoursUntilParty < 24) {
+      return NextResponse.json(
+        { error: 'Party inquiries must be for at least 24 hours in advance.' },
+        { status: 400 }
+      )
+    }
+
     // Attach user_id if the requester is logged in
     const sessionClient = await createClient()
     const { data: { user } } = await sessionClient.auth.getUser()

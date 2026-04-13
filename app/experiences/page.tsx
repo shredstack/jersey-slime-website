@@ -6,11 +6,11 @@ import { formatPrice, formatDate, formatTime } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Experiences | Jersey Slime Studio',
   description:
-    "Explore our slime-making experiences at Jersey Slime Studio. From walk-in sessions to private events, there's something for everyone.",
+    "Explore our slime experiences at Jersey Slime Studio. From walk-in sessions to private events, customize slime kits with mix-ins and charms.",
   openGraph: {
     title: 'Experiences | Jersey Slime Studio',
     description:
-      "Explore our slime-making experiences at Jersey Slime Studio. From walk-in sessions to private events, there's something for everyone.",
+      "Explore our slime experiences at Jersey Slime Studio. From walk-in sessions to private events, customize slime kits with mix-ins and charms.",
   },
 }
 
@@ -53,9 +53,9 @@ export default async function ExperiencesPage() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-lg leading-relaxed text-gray-700">
             At Jersey Slime Studio, every visit is an adventure. Our
-            experienced staff will guide you through the slime-making process
-            step by step — all materials included. Just bring your imagination
-            (and maybe an apron)!
+            experienced staff will help you customize your slime kit with
+            colorful mix-ins, charms, and more — everything is included. Just
+            bring your imagination (and maybe an apron)!
           </p>
         </div>
       </section>

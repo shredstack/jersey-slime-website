@@ -5,7 +5,7 @@ import GalleryClient from './GalleryClient'
 export const metadata: Metadata = {
   title: 'Photo Gallery | Jersey Slime Studio 38',
   description:
-    'Take a look inside Jersey Slime Studio 38! Browse photos from our studio, parties, events, and behind-the-scenes slime making in Utah.',
+    'Take a look inside Jersey Slime Studio 38! Browse photos from our studio, parties, events, and colorful slime creations in Utah.',
 }
 
 export default async function GalleryPage() {

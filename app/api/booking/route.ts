@@ -29,6 +29,17 @@ export async function POST(request: Request) {
 
     const { experience_id, date, start_time, guest_count, notes } = parsed.data
 
+    // Enforce 24-hour advance booking requirement
+    const [sh, sm] = start_time.split(':').map(Number)
+    const slotDate = new Date(`${date}T${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}:00`)
+    const hoursUntilSlot = (slotDate.getTime() - Date.now()) / (1000 * 60 * 60)
+    if (hoursUntilSlot < 24) {
+      return NextResponse.json(
+        { error: 'Bookings must be made at least 24 hours in advance.' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
     // Authenticate user

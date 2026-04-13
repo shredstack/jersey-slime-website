@@ -53,8 +53,8 @@ export default function ShopPage() {
                 </h2>
                 <p className="mx-auto mt-3 max-w-lg text-gray-600">
                   Our full slime collection will be available on our Shopify store. Browse dozens of
-                  unique slimes, seasonal specials, and slime-making kits — all shipped directly to
-                  your door.
+                  unique slimes, seasonal specials, and slime kits with mix-ins — all shipped
+                  directly to your door.
                 </p>
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-gray-400 px-8 py-3 font-semibold text-white cursor-not-allowed">
                   Coming Soon

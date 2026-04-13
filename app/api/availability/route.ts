@@ -25,7 +25,16 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const slots = await getAvailableSlots(date, experienceId, supabase, guestCount)
 
-    return NextResponse.json({ slots })
+    // Filter out slots that are less than 24 hours from now
+    const now = new Date()
+    const filteredSlots = slots.filter((slot) => {
+      const [h, m] = slot.start_time.split(':').map(Number)
+      const slotDate = new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`)
+      const hoursUntilSlot = (slotDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+      return hoursUntilSlot >= 24
+    })
+
+    return NextResponse.json({ slots: filteredSlots })
   } catch (err) {
     console.error('Availability route error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
