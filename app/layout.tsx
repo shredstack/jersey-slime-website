@@ -22,15 +22,15 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://jerseyslimestudio.com'),
   title: {
     template: '%s | Jersey Slime Studio 38',
-    default: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
+    default: 'Jersey Slime Studio 38 | Slime Experience Studio in Utah',
   },
   description:
-    'Jersey Slime Studio 38 is Utah\'s premier hands-on slime making experience studio. Book slime parties, walk-in slime experiences, and kids activities. The ultimate slime studio for birthday parties and group events.',
+    'Jersey Slime Studio 38 is Utah\'s premier hands-on slime experience studio. Customize slime kits with mix-ins and charms, book slime parties, and enjoy walk-in experiences. The ultimate slime studio for birthday parties and group events.',
   keywords: [
     'slime experience Utah',
     'slime studio',
     'kids activities',
-    'slime making',
+    'slime kits',
     'slime party',
     'birthday party Utah',
     'kids birthday party',
@@ -45,15 +45,15 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://jerseyslimestudio.com',
     siteName: 'Jersey Slime Studio 38',
-    title: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
+    title: 'Jersey Slime Studio 38 | Slime Experience Studio in Utah',
     description:
-      'Utah\'s premier hands-on slime making experience studio. Book slime parties, walk-in experiences, and more.',
+      'Utah\'s premier hands-on slime experience studio. Customize slime kits with mix-ins and charms, book parties, and more.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jersey Slime Studio 38 | Slime Making Experience in Utah',
+    title: 'Jersey Slime Studio 38 | Slime Experience Studio in Utah',
     description:
-      'Utah\'s premier hands-on slime making experience studio. Book slime parties, walk-in experiences, and more.',
+      'Utah\'s premier hands-on slime experience studio. Customize slime kits with mix-ins and charms, book parties, and more.',
   },
   icons: {
     icon: '/jersey_slime_google_profile_720x720.png',
@@ -76,7 +76,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: 'Jersey Slime Studio 38',
-  description: 'Hands-on slime making experience studio in Utah',
+  description: 'Hands-on slime experience studio in Utah — customize slime kits with mix-ins and charms',
   address: {
     '@type': 'PostalAddress',
     addressRegion: 'UT',

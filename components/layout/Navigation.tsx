@@ -7,7 +7,7 @@ export const navLinks = [
   { href: '/gallery', label: 'Photos' },
   { href: '/shop', label: 'Shop' },
   { href: '/blog', label: 'Blog' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/contact', label: 'Visit Us' },
 ] as const
 
 export type NavLink = (typeof navLinks)[number]

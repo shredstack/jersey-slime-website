@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 export const metadata: Metadata = {
   title: 'Blog & Updates',
   description:
-    'Read the latest tips, tutorials, and news from Jersey Slime Studio 38. Learn slime-making techniques, get party ideas, and stay up to date with studio events.',
+    'Read the latest tips, tutorials, and news from Jersey Slime Studio 38. Get slime inspiration, party ideas, and stay up to date with studio events.',
   openGraph: {
     title: 'Blog & Updates | Jersey Slime Studio 38',
     description:

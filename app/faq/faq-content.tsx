@@ -11,17 +11,17 @@ const faqs: FAQItem[] = [
   {
     question: 'What ages is Jersey Slime Studio 38 appropriate for?',
     answer:
-      'Our slime-making experiences are designed for kids ages 4 and up, though children of all ages are welcome with a participating adult. We offer different experience levels to match various age groups — our Little Slimers program (ages 4-6) is simplified and extra hands-on, while our standard experiences work great for ages 7 and up. Adults love making slime too!',
+      'Our slime experiences are designed for kids ages 4 and up, though children of all ages are welcome with a participating adult. We offer different experience levels to match various age groups — our Little Slimers program (ages 4-6) is simplified and extra hands-on, while our standard experiences work great for ages 7 and up. Adults love customizing slime kits too!',
   },
   {
     question: 'What should we wear to the studio?',
     answer:
-      'We recommend wearing clothes that you don\'t mind getting a little messy. While we provide aprons and do our best to keep things tidy, slime-making can involve glue, glitter, and colorful pigments. Avoid wearing expensive or delicate clothing. Closed-toe shoes are also recommended.',
+      'We recommend wearing clothes that you don\'t mind getting a little messy. While we provide aprons and do our best to keep things tidy, working with slime can involve glitter, colorful pigments, and fun mix-ins. Avoid wearing expensive or delicate clothing. Closed-toe shoes are also recommended.',
   },
   {
-    question: 'How long does a slime-making session last?',
+    question: 'How long does a slime session last?',
     answer:
-      'Our standard walk-in slime experience lasts approximately 45-60 minutes. Private party sessions run about 90 minutes, which includes setup time, slime making, and a short celebration period. Custom events may vary in length — contact us for specific timing.',
+      'Our standard walk-in slime experience lasts approximately 45-60 minutes. Private party sessions run about 90 minutes, which includes setup time, slime customization, and a short celebration period. Custom events may vary in length — contact us for specific timing.',
   },
   {
     question: 'What are the group size options for parties and events?',
@@ -36,17 +36,17 @@ const faqs: FAQItem[] = [
   {
     question: 'How messy does it actually get?',
     answer:
-      'We keep things fun but manageable! Our studio is designed for easy cleanup, and we provide aprons, table covers, and all necessary supplies. Most slime ingredients wash out of clothing with warm water and soap. That said, glitter has a mind of its own — so plan accordingly! Our staff handles all studio cleanup so you can just focus on the fun.',
+      'We keep things fun but manageable! Our studio is designed for easy cleanup, and we provide aprons, table covers, and all necessary supplies. Most slime and mix-ins wash out of clothing with warm water and soap. That said, glitter has a mind of its own — so plan accordingly! Our staff handles all studio cleanup so you can just focus on the fun.',
   },
   {
     question: 'Can we bring food and drinks to the studio?',
     answer:
-      'Yes! For private party bookings, you\'re welcome to bring your own food, drinks, cake, and decorations. We have a designated party area separate from the slime-making stations. For walk-in sessions, we ask that food and drinks stay in our lobby area to keep the slime-making tables clean. We do not provide food or beverages.',
+      'Yes! For private party bookings, you\'re welcome to bring your own food, drinks, cake, and decorations. We have a designated party area separate from the slime stations. For walk-in sessions, we ask that food and drinks stay in our lobby area to keep the slime tables clean. We do not provide food or beverages.',
   },
   {
     question: 'Is the studio accessible for guests with disabilities?',
     answer:
-      'Absolutely. Jersey Slime Studio 38 is fully ADA accessible with ground-floor entry, wide aisles, and accessible restrooms. Our slime-making tables can accommodate wheelchairs, and we\'re happy to make additional accommodations upon request. If you have specific accessibility needs, please let us know when booking so we can ensure the best experience for everyone.',
+      'Absolutely. Jersey Slime Studio 38 is fully ADA accessible with ground-floor entry, wide aisles, and accessible restrooms. Our slime tables can accommodate wheelchairs, and we\'re happy to make additional accommodations upon request. If you have specific accessibility needs, please let us know when booking so we can ensure the best experience for everyone.',
   },
 ]
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAvailableSlots } from '@/lib/availability'
+import { mountainTimeToUTC } from '@/lib/utils'
 
 export async function GET(request: Request) {
   try {
@@ -25,7 +26,15 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const slots = await getAvailableSlots(date, experienceId, supabase, guestCount)
 
-    return NextResponse.json({ slots })
+    // Filter out slots that are less than 24 hours from now (in Mountain Time)
+    const now = new Date()
+    const filteredSlots = slots.filter((slot) => {
+      const slotUTC = mountainTimeToUTC(date, slot.start_time)
+      const hoursUntilSlot = (slotUTC - now.getTime()) / (1000 * 60 * 60)
+      return hoursUntilSlot >= 24
+    })
+
+    return NextResponse.json({ slots: filteredSlots })
   } catch (err) {
     console.error('Availability route error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getStudioContactEmail, EMAIL_FROM, getAdminEmails } from '@/lib/email'
 import { partyInquiryCustomer, partyInquiryAdmin } from '@/lib/email-templates'
-import { formatTime } from '@/lib/utils'
+import { formatTime, mountainTimeToUTC } from '@/lib/utils'
 
 const DURATION_LABELS: Record<number, string> = {
   60: '60 minutes (1 hour)',
@@ -51,6 +51,16 @@ export async function POST(request: Request) {
       selectedPackage,
       message,
     } = parsed.data
+
+    // Enforce 24-hour advance booking requirement (in Mountain Time)
+    const slotUTC = mountainTimeToUTC(preferredDate, preferredTime)
+    const hoursUntilParty = (slotUTC - Date.now()) / (1000 * 60 * 60)
+    if (hoursUntilParty < 24) {
+      return NextResponse.json(
+        { error: 'Party inquiries must be for at least 24 hours in advance.' },
+        { status: 400 }
+      )
+    }
 
     // Attach user_id if the requester is logged in
     const sessionClient = await createClient()

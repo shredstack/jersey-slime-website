@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getAvailableSlots } from '@/lib/availability'
 import { getStudioContactEmail, EMAIL_FROM, getAdminEmails } from '@/lib/email'
-import { formatDate, formatTime, formatPrice } from '@/lib/utils'
+import { formatDate, formatTime, formatPrice, mountainTimeToUTC } from '@/lib/utils'
 import { bookingReceivedCustomer, bookingReceivedAdmin } from '@/lib/email-templates'
 
 const bookingSchema = z.object({
@@ -28,6 +28,16 @@ export async function POST(request: Request) {
     }
 
     const { experience_id, date, start_time, guest_count, notes } = parsed.data
+
+    // Enforce 24-hour advance booking requirement (in Mountain Time)
+    const slotUTC = mountainTimeToUTC(date, start_time)
+    const hoursUntilSlot = (slotUTC - Date.now()) / (1000 * 60 * 60)
+    if (hoursUntilSlot < 24) {
+      return NextResponse.json(
+        { error: 'Bookings must be made at least 24 hours in advance.' },
+        { status: 400 }
+      )
+    }
 
     const supabase = await createClient()
 

@@ -13,7 +13,7 @@ const exploreLinks = [
 const resourceLinks = [
   { href: '/faq', label: 'FAQ' },
   { href: '/blog', label: 'Blog' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/contact', label: 'Visit Us' },
   { href: '/shop', label: 'Shop' },
 ]
 
@@ -52,8 +52,8 @@ export default async function Footer() {
               </span>
             </Link>
             <p className="mt-3 text-sm text-gray-600 leading-relaxed max-w-xs">
-              Utah&apos;s most colorful slime-making experience studio. Stretch
-              your creativity, squish your stress, and make memories that stick!
+              Utah&apos;s most colorful slime experience studio. Customize your
+              own slime kit with mix-ins and charms, and make memories that stick!
             </p>
           </div>
 
