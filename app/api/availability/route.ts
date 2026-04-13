@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAvailableSlots } from '@/lib/availability'
+import { mountainTimeToUTC } from '@/lib/utils'
 
 export async function GET(request: Request) {
   try {
@@ -25,12 +26,11 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const slots = await getAvailableSlots(date, experienceId, supabase, guestCount)
 
-    // Filter out slots that are less than 24 hours from now
+    // Filter out slots that are less than 24 hours from now (in Mountain Time)
     const now = new Date()
     const filteredSlots = slots.filter((slot) => {
-      const [h, m] = slot.start_time.split(':').map(Number)
-      const slotDate = new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`)
-      const hoursUntilSlot = (slotDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+      const slotUTC = mountainTimeToUTC(date, slot.start_time)
+      const hoursUntilSlot = (slotUTC - now.getTime()) / (1000 * 60 * 60)
       return hoursUntilSlot >= 24
     })
 

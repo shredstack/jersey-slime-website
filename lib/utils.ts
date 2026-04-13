@@ -29,6 +29,23 @@ export function formatTime(time: string): string {
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`
 }
 
+/**
+ * Convert a date + time (HH:MM) in Mountain Time to a UTC timestamp (ms).
+ * Handles MST/MDT automatically via Intl.
+ */
+export function mountainTimeToUTC(date: string, time: string): number {
+  const naive = new Date(`${date}T${time}:00Z`)
+  const mtParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Denver',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(naive)
+  const get = (type: string) => Number(mtParts.find((p) => p.type === type)?.value)
+  const mtEquiv = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'))
+  return naive.getTime() + (naive.getTime() - mtEquiv)
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
