@@ -18,13 +18,13 @@ const valueProps = [
     emoji: '🎨',
     title: 'Customize Your Slime Kit',
     description:
-      'Pick your colors, scents, mix-ins, and charms to build a one-of-a-kind slime creation.',
+      'Pick your colors, mix-ins, and charms to build a one-of-a-kind slime creation.',
   },
   {
     emoji: '🎉',
     title: 'Birthday Parties',
     description:
-      'Celebrate with the ultimate slime party! Packages for every budget and group size.',
+      'Celebrate with the ultimate slime party! Packages for every budget and group size. We can close down the store for parties of 15 or more.',
   },
   {
     emoji: '🛍️',
